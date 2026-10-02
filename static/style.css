@@ -1,21 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root {
-  --primary-navy: #090d16;
-  --panel-bg: #0f172a;
-  --border-slate: #1e293b;
+  --bg-dark: #080c14;
+  --card-bg: #0f172a;
+  --card-border: #1e293b;
+  --card-border-hover: #334155;
   --accent-blue: #3b82f6;
-  --accent-cyan: #06b6d4;
   --accent-emerald: #10b981;
   --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
-  --accent-purple: #8b5cf6;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', sans-serif;
-  color: #f1f5f9;
-  background-color: var(--primary-navy);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-dark);
+  color: #f8fafc;
   overflow-x: hidden;
 }
 
@@ -23,133 +25,87 @@ code, pre, .font-mono {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Blueprint / Pipeline Grid Background */
-.pipeline-canvas {
-  background-color: #090d16;
+/* Subtle architectural grid */
+.arch-grid {
+  background-color: #080c14;
   background-image: 
-    linear-gradient(rgba(59, 130, 246, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59, 130, 246, 0.05) 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(rgba(59, 130, 246, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
 }
 
-.pipeline-canvas-light {
-  background-color: #f8fafc;
-  background-image: 
-    linear-gradient(rgba(148, 163, 184, 0.15) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.15) 1px, transparent 1px);
-  background-size: 24px 24px;
-}
-
-/* Animated SVG Data Packets */
-@keyframes flowDash {
-  to {
-    stroke-dashoffset: -40;
-  }
-}
-
-.flow-wire {
-  stroke: #334155;
-  stroke-width: 2.5;
-  stroke-linecap: round;
-  fill: none;
-  transition: all 0.4s ease;
-}
-
-.flow-wire.active {
-  stroke: #3b82f6;
-  stroke-dasharray: 6, 6;
-  animation: flowDash 0.8s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.8));
-}
-
-.flow-wire.success {
-  stroke: #10b981;
-  stroke-dasharray: 6, 6;
-  animation: flowDash 0.8s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.8));
-}
-
-.flow-wire.warning {
-  stroke: #f59e0b;
-  stroke-dasharray: 6, 6;
-  animation: flowDash 0.8s linear infinite;
-  filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.8));
-}
-
-/* Node State Styles */
-.pipeline-node {
-  background: rgba(15, 23, 42, 0.9);
-  border: 1.5px solid #1e293b;
-  border-radius: 16px;
-  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+/* Clean pipeline connector lines */
+.pipeline-connector {
   position: relative;
 }
 
-.pipeline-node:hover {
-  border-color: #475569;
-  transform: translateY(-2px);
-}
-
-.pipeline-node.node-active {
-  border-color: #3b82f6 !important;
-  background: rgba(30, 58, 138, 0.4) !important;
-  box-shadow: 0 0 25px -2px rgba(59, 130, 246, 0.6) !important;
-  transform: scale(1.02);
-}
-
-.pipeline-node.node-success {
-  border-color: #10b981 !important;
-  background: rgba(6, 78, 59, 0.4) !important;
-  box-shadow: 0 0 20px -2px rgba(16, 185, 129, 0.5) !important;
-}
-
-.pipeline-node.node-warning {
-  border-color: #f59e0b !important;
-  background: rgba(120, 53, 15, 0.4) !important;
-  box-shadow: 0 0 20px -2px rgba(245, 158, 11, 0.5) !important;
-}
-
-.pipeline-node.node-skipped {
-  opacity: 0.35;
-  filter: grayscale(0.8);
-}
-
-/* Pulse beacon on active node */
-@keyframes beacon {
-  0% { transform: scale(1); opacity: 1; }
-  100% { transform: scale(2.2); opacity: 0; }
-}
-
-.beacon-dot {
-  position: relative;
-}
-
-.beacon-dot::after {
+.pipeline-connector::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: currentColor;
-  animation: beacon 1.4s ease-out infinite;
+  top: 50%;
+  right: -24px;
+  width: 24px;
+  height: 2px;
+  background: #1e293b;
+  transform: translateY(-50%);
+  z-index: 1;
 }
 
-/* Glass Panels */
-.glass-panel-dark {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+.pipeline-connector.active::after {
+  background: #3b82f6;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.8);
 }
 
-.glass-panel-white {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+/* Pipeline Cards */
+.pipeline-card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  transition: all 0.25s ease;
+  position: relative;
+}
+
+.pipeline-card:hover {
+  border-color: #334155;
+}
+
+.pipeline-card.card-active {
+  border-color: #3b82f6 !important;
+  background: #13203c !important;
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.25) !important;
+}
+
+.pipeline-card.card-success {
+  border-color: #10b981 !important;
+  background: #0b2920 !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.2) !important;
+}
+
+.pipeline-card.card-warning {
+  border-color: #f59e0b !important;
+  background: #2b1f0c !important;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.2) !important;
+}
+
+.pipeline-card.card-dimmed {
+  opacity: 0.35;
+  filter: grayscale(0.7);
+}
+
+/* Formatted Response Styling */
+.formatted-response strong {
+  color: #60a5fa;
+  font-weight: 600;
+}
+
+.formatted-response ul {
+  margin-top: 6px;
+  margin-bottom: 6px;
+}
+
+.formatted-response li {
+  margin-bottom: 4px;
+  line-height: 1.5;
 }
 
 /* Custom Scrollbars */
@@ -159,14 +115,14 @@ code, pre, .font-mono {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: #080c14;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #334155;
 }
