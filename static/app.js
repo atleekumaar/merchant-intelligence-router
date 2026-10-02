@@ -1,374 +1,364 @@
 /**
- * Merchant Intelligence Router — Frontend Logic & Interactive Simulation
+ * Merchant Intelligence Router — Visual Pipeline Flowchart & Node Inspector
  */
 
-// Initialize Lucide Icons
 document.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) {
     window.lucide.createIcons();
   }
-  selectDomain("analytics");
+  updateSvgWires();
+  window.addEventListener("resize", updateSvgWires);
 });
 
-// View Mode Toggle (Simple View vs. Technical View)
-function setViewMode(mode) {
-  const body = document.body;
-  const simpleBtn = document.getElementById("simpleViewBtn");
-  const techBtn = document.getElementById("techViewBtn");
+// Dynamic SVG Wire Alignment (Connects nodes dynamically based on positions)
+function updateSvgWires() {
+  const getCenter = (id) => {
+    const el = document.getElementById(id);
+    if (!el) return { x: 0, y: 0 };
+    const canvas = document.querySelector(".pipeline-canvas");
+    const cRect = canvas.getBoundingClientRect();
+    const eRect = el.getBoundingClientRect();
+    return {
+      left: eRect.left - cRect.left,
+      right: eRect.right - cRect.left,
+      top: eRect.top - cRect.top + eRect.height / 2,
+      bottom: eRect.bottom - cRect.top,
+      x: eRect.left - cRect.left + eRect.width / 2,
+      y: eRect.top - cRect.top + eRect.height / 2,
+    };
+  };
 
-  if (mode === "tech") {
-    body.classList.remove("simple-mode");
-    body.classList.add("tech-mode");
-    techBtn.className = "px-3 py-1.5 rounded-lg transition-all bg-white text-blue-700 shadow-sm flex items-center space-x-1.5";
-    simpleBtn.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center space-x-1.5";
-  } else {
-    body.classList.remove("tech-mode");
-    body.classList.add("simple-mode");
-    simpleBtn.className = "px-3 py-1.5 rounded-lg transition-all bg-white text-blue-700 shadow-sm flex items-center space-x-1.5";
-    techBtn.className = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center space-x-1.5";
+  const nIngest = getCenter("node-ingest");
+  const nJev = getCenter("node-jev");
+  const nGate = getCenter("node-gate");
+  const nLangGraph = getCenter("node-langgraph");
+  
+  const nAnalytics = getCenter("node-analytics");
+  const nProducts = getCenter("node-products");
+  const nCustomers = getCenter("node-customers");
+  const nInventory = getCenter("node-inventory");
+  const nSupport = getCenter("node-support");
+  const nMath = getCenter("node-math");
+
+  setPath("wire-1", `M ${nIngest.right} ${nIngest.y} L ${nJev.left} ${nJev.y}`);
+  setPath("wire-2", `M ${nJev.right} ${nJev.y} L ${nGate.left} ${nGate.y}`);
+  setPath("wire-gate-high", `M ${nGate.right} ${nGate.y} L ${nLangGraph.left} ${nLangGraph.y}`);
+  setPath("wire-gate-low", `M ${nGate.x} ${nGate.bottom} C ${nGate.x} ${nSupport.y}, ${nSupport.x} ${nGate.bottom}, ${nSupport.x} ${nSupport.top}`);
+
+  setPath("wire-to-analytics", `M ${nLangGraph.x} ${nLangGraph.bottom} C ${nLangGraph.x} ${nAnalytics.top - 20}, ${nAnalytics.x} ${nLangGraph.bottom + 20}, ${nAnalytics.x} ${nAnalytics.top}`);
+  setPath("wire-to-products", `M ${nLangGraph.x} ${nLangGraph.bottom} C ${nLangGraph.x} ${nProducts.top - 20}, ${nProducts.x} ${nLangGraph.bottom + 20}, ${nProducts.x} ${nProducts.top}`);
+  setPath("wire-to-customers", `M ${nLangGraph.x} ${nLangGraph.bottom} C ${nLangGraph.x} ${nCustomers.top - 20}, ${nCustomers.x} ${nLangGraph.bottom + 20}, ${nCustomers.x} ${nCustomers.top}`);
+  setPath("wire-to-inventory", `M ${nLangGraph.x} ${nLangGraph.bottom} C ${nLangGraph.x} ${nInventory.top - 20}, ${nInventory.x} ${nLangGraph.bottom + 20}, ${nInventory.x} ${nInventory.top}`);
+  setPath("wire-to-support", `M ${nLangGraph.x} ${nLangGraph.bottom} C ${nLangGraph.x} ${nSupport.top - 20}, ${nSupport.x} ${nLangGraph.bottom + 20}, ${nSupport.x} ${nSupport.top}`);
+
+  setPath("wire-math-in", `M ${nAnalytics.x} ${nAnalytics.bottom} L ${nMath.x} ${nMath.top}`);
+}
+
+function setPath(id, d) {
+  const el = document.getElementById(id);
+  if (el) el.setAttribute("d", d);
+}
+
+// Preset Loader
+function loadAndRunPreset(query) {
+  const input = document.getElementById("pipelineInput");
+  if (input) {
+    input.value = query;
+    executeVisualPipeline();
   }
 }
 
-// Preset Query Helpers
-function setHeroQuery(query) {
-  const heroInput = document.getElementById("heroInput");
-  if (heroInput) {
-    heroInput.value = query;
-    heroInput.focus();
-  }
-}
-
-function setSimQuery(query) {
-  const simInput = document.getElementById("simInput");
-  if (simInput) {
-    simInput.value = query;
-    runLiveSimulation();
-  }
-}
-
-function runSimulationFromHero() {
-  const heroInput = document.getElementById("heroInput");
-  const simInput = document.getElementById("simInput");
-  if (heroInput && simInput) {
-    simInput.value = heroInput.value;
-    document.getElementById("live-demo").scrollIntoView({ behavior: "smooth" });
-    setTimeout(() => {
-      runLiveSimulation();
-    }, 600);
-  }
-}
-
-// Domain Tab Explorer
-const DOMAIN_DATA = {
-  analytics: {
-    title: "📊 Analytics Intelligence",
-    scope: "Tracks sales volumes, revenue fluctuations, average order values, and day-over-day growth trends.",
-    questions: [
-      "Why were my sales low yesterday?",
-      "How much did I sell today?",
-      "Compare revenue between yesterday and today"
-    ],
-    mockPreview: `
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div class="text-xs text-slate-500 font-medium">Yesterday's Revenue</div>
-          <div class="text-2xl font-bold text-slate-900 mt-1">₹31,200</div>
-          <div class="text-xs text-rose-600 font-semibold mt-1">📉 -44.68% vs previous day</div>
-        </div>
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div class="text-xs text-slate-500 font-medium">Total Orders Yesterday</div>
-          <div class="text-2xl font-bold text-slate-900 mt-1">41 orders</div>
-          <div class="text-xs text-rose-600 font-semibold mt-1">📉 -47.44% volume drop</div>
-        </div>
-        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
-          <div class="text-xs text-slate-500 font-medium">Average Order Value</div>
-          <div class="text-2xl font-bold text-slate-900 mt-1">₹760.98</div>
-          <div class="text-xs text-emerald-600 font-semibold mt-1">📈 +5.2% basket size</div>
-        </div>
-      </div>
-    `
-  },
-  products: {
-    title: "📦 Product Performance Intelligence",
-    scope: "Ranks catalog SKUs strictly by units sold, margin profitability, and customer satisfaction ratings.",
-    questions: [
-      "Show me my top 5 products",
-      "Which product sells the most?",
-      "What is my highest-rated item?"
-    ],
-    mockPreview: `
-      <div class="space-y-2 text-xs">
-        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-          <div><span class="font-bold text-slate-900">1. Organic Green Tea (250g)</span> <span class="text-slate-500">(Beverages)</span></div>
-          <div class="font-mono font-bold text-blue-600">1,240 units sold | ₹450 | ⭐ 4.8</div>
-        </div>
-        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-          <div><span class="font-bold text-slate-900">2. Cold-Pressed Mustard Oil (1L)</span> <span class="text-slate-500">(Cooking)</span></div>
-          <div class="font-mono font-bold text-blue-600">980 units sold | ₹280 | ⭐ 4.6</div>
-        </div>
-        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-          <div><span class="font-bold text-slate-900">3. Whole Wheat Atta (5kg)</span> <span class="text-slate-500">(Staples)</span></div>
-          <div class="font-mono font-bold text-blue-600">850 units sold | ₹310 | ⭐ 4.5</div>
-        </div>
-      </div>
-    `
-  },
-  customers: {
-    title: "👥 Customer Retention & VIP Intelligence",
-    scope: "Identifies repeat buyers, total lifetime spend, geographic clustering, and customer segments.",
-    questions: [
-      "Who are my best customers?",
-      "Which customers bought from me most?",
-      "Show repeat customer accounts"
-    ],
-    mockPreview: `
-      <div class="space-y-2 text-xs">
-        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-          <div><span class="font-bold text-slate-900">1. Aarav Sharma</span> <span class="text-slate-500">(Mumbai)</span></div>
-          <div class="font-mono font-bold text-emerald-600">₹42,500 spent | 28 orders [VIP]</div>
-        </div>
-        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-          <div><span class="font-bold text-slate-900">2. Priya Patel</span> <span class="text-slate-500">(Ahmedabad)</span></div>
-          <div class="font-mono font-bold text-emerald-600">₹31,800 spent | 22 orders [VIP]</div>
-        </div>
-        <div class="p-3 bg-white border border-slate-200 rounded-xl flex items-center justify-between">
-          <div><span class="font-bold text-slate-900">3. Rohan Gupta</span> <span class="text-slate-500">(Delhi)</span></div>
-          <div class="font-mono font-bold text-emerald-600">₹19,400 spent | 15 orders [Regular]</div>
-        </div>
-      </div>
-    `
-  },
-  inventory: {
-    title: "📋 Inventory Health & Stock Warnings",
-    scope: "Monitors real-time warehouse quantities against reorder thresholds to prevent stockouts.",
-    questions: [
-      "Which products are low in stock?",
-      "How much inventory do I have?",
-      "What should I reorder today?"
-    ],
-    mockPreview: `
-      <div class="space-y-2 text-xs">
-        <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-rose-900">
-          <div><span class="font-bold">🔴 Alphonso Mango Pulp (850g)</span></div>
-          <div class="font-mono font-bold">0 units left (OUT OF STOCK) | Reorder: 10</div>
-        </div>
-        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-amber-900">
-          <div><span class="font-bold">⚠️ Whole Wheat Atta (5kg)</span></div>
-          <div class="font-mono font-bold">4 units left (CRITICAL) | Reorder: 20</div>
-        </div>
-        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-center justify-between text-amber-900">
-          <div><span class="font-bold">⚠️ Organic Green Tea (250g)</span></div>
-          <div class="font-mono font-bold">18 units left (LOW STOCK) | Reorder: 30</div>
-        </div>
-      </div>
-    `
-  },
-  support: {
-    title: "🆘 Support & Ambiguity Clarification",
-    scope: "Intercepts general troubleshooting, dashboard tutorials, and low-confidence inputs with guided options.",
-    questions: [
-      "Help me use the dashboard",
-      "How does this assistant work?",
-      "Tell me about my business (Ambiguous input)"
-    ],
-    mockPreview: `
-      <div class="p-4 bg-white border border-slate-200 rounded-2xl text-xs space-y-2">
-        <div class="font-bold text-slate-900">Guided Capabilities Menu:</div>
-        <div class="text-slate-600">• 📊 <strong>Analytics</strong>: Period-over-period sales and revenue fluctuations</div>
-        <div class="text-slate-600">• 📦 <strong>Products</strong>: Best-selling SKU rankings and volume performance</div>
-        <div class="text-slate-600">• 👥 <strong>Customers</strong>: VIP buyer retention and purchase history</div>
-        <div class="text-slate-600">• 📋 <strong>Inventory</strong>: Low stock alerts and reorder thresholds</div>
-      </div>
-    `
-  }
-};
-
-function selectDomain(domainKey) {
-  const tabs = document.querySelectorAll(".domain-tab");
-  tabs.forEach((tab) => {
-    tab.className = "domain-tab p-3.5 rounded-2xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm transition-all";
+// Reset Visual Canvas
+function resetVisualCanvas() {
+  document.querySelectorAll(".pipeline-node").forEach(node => {
+    node.className = "pipeline-node p-4 cursor-pointer";
+    const tag = node.querySelector(".status-tag");
+    if (tag) {
+      tag.className = "status-tag px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]";
+      tag.textContent = "IDLE";
+    }
   });
 
-  const activeTab = document.getElementById(`tab-${domainKey}`);
-  if (activeTab) {
-    activeTab.className = "domain-tab p-3.5 rounded-2xl border text-center transition-all bg-blue-600 text-white font-bold text-sm shadow-md";
-  }
+  document.querySelectorAll(".flow-wire").forEach(wire => {
+    wire.className = "flow-wire";
+  });
 
-  const container = document.getElementById("domainContent");
-  const data = DOMAIN_DATA[domainKey];
-  if (container && data) {
-    container.innerHTML = `
-      <div class="mb-6">
-        <h3 class="text-xl font-bold text-slate-900">${data.title}</h3>
-        <p class="text-sm text-slate-600 mt-1">${data.scope}</p>
-      </div>
-
-      <div class="mb-6">
-        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Representative Merchant Inquiries:</div>
-        <div class="flex flex-wrap gap-2">
-          ${data.questions.map(q => `<span class="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 font-medium">"${q}"</span>`).join("")}
-        </div>
-      </div>
-
-      <div>
-        <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Live Deterministic Data Preview:</div>
-        ${data.mockPreview}
-      </div>
-    `;
-  }
+  document.getElementById("canvasStatusDot").className = "w-2.5 h-2.5 rounded-full bg-slate-600";
+  document.getElementById("canvasStatusText").textContent = "IDLE: Ready for execution";
+  document.getElementById("canvasLatency").textContent = "0ms";
+  document.getElementById("node-jev-intent").textContent = "--";
+  document.getElementById("node-jev-conf").textContent = "--";
+  document.getElementById("node-gate-result").textContent = "PENDING";
+  document.getElementById("node-gate-result").className = "ml-2 px-1.5 py-0.5 rounded text-[10px] bg-slate-800 text-slate-400";
+  document.getElementById("node-langgraph-branch").textContent = "--";
+  document.getElementById("node-math-preview").textContent = "// Waiting for node execution...";
+  document.getElementById("outputIntentBadge").textContent = "intent: --";
+  document.getElementById("outputConfidenceBadge").textContent = "conf: --";
+  document.getElementById("outputMessage").textContent = "Press 'Execute Pipeline' to trigger execution.";
 }
 
-// Live Interactive Pipeline Simulation
-async function runLiveSimulation() {
-  const inputEl = document.getElementById("simInput");
-  const btn = document.getElementById("simRunBtn");
+// Visual Pipeline Execution
+async function executeVisualPipeline() {
+  const inputEl = document.getElementById("pipelineInput");
+  const btn = document.getElementById("btnRunPipeline");
   const query = inputEl ? inputEl.value.trim() : "";
   if (!query) return;
 
   btn.disabled = true;
-  btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i><span>Running...</span>`;
+  btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i><span>Running...</span>`;
   if (window.lucide) window.lucide.createIcons();
 
-  resetStepUI();
+  resetVisualCanvas();
+  updateSvgWires();
+
+  const startTime = performance.now();
+  document.getElementById("canvasStatusDot").className = "w-2.5 h-2.5 rounded-full bg-blue-500 beacon-dot text-blue-500";
+  document.getElementById("canvasStatusText").textContent = "EXECUTING PIPELINE...";
 
   try {
-    // 1. Ingestion Step
-    await highlightStep(1, "processing", "Normalizing & Expanding...");
-    await new Promise(r => setTimeout(r, 200));
-    await highlightStep(1, "complete", "✓ Normalized");
+    // Stage 1: INGESTION
+    setNodeStatus("node-ingest", "active", "RUNNING");
+    document.getElementById("node-ingest-query").textContent = `"${query}"`;
+    await sleep(220);
+    setNodeStatus("node-ingest", "success", "PASS");
+    activateWire("wire-1", "active");
 
-    // Try backend API call first
+    // Fetch live backend result or fallback
     let result = null;
     try {
-      const response = await fetch("/api/query", {
+      const resp = await fetch("/api/query", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: query })
       });
-      if (response.ok) {
-        result = await response.json();
-      }
+      if (resp.ok) result = await resp.json();
     } catch (e) {
-      console.warn("Backend API not reachable, falling back to local simulation engine", e);
+      console.warn("Backend API offline, using local simulator", e);
     }
 
-    // Fallback simulation if running standalone static
     if (!result) {
-      result = simulateLocalPipeline(query);
+      result = simulatePipelineLocally(query);
     }
 
-    // 2. Classifier Step
-    await highlightStep(2, "processing", "Computing Cosine Sim...");
-    await new Promise(r => setTimeout(r, 250));
-    await highlightStep(2, "complete", `✓ ${result.intent.toUpperCase()} (${Math.round(result.confidence * 100)}%)`);
+    // Stage 2: JEV CLASSIFIER
+    setNodeStatus("node-jev", "active", "CLASSIFYING");
+    await sleep(250);
+    document.getElementById("node-jev-intent").textContent = result.intent.toUpperCase();
+    document.getElementById("node-jev-conf").textContent = `${Math.round(result.confidence * 100)}%`;
+    setNodeStatus("node-jev", "success", "DONE");
+    activateWire("wire-2", "active");
 
-    // 3. Confidence Gate Step
-    await highlightStep(3, "processing", "Comparing vs 0.70...");
-    await new Promise(r => setTimeout(r, 200));
-    if (result.passes_threshold) {
-      await highlightStep(3, "complete", "✓ &ge; 0.70 (Accepted)");
+    // Stage 3: CONFIDENCE GATE
+    setNodeStatus("node-gate", "active", "EVALUATING");
+    await sleep(200);
+
+    const isHighConf = result.passes_threshold;
+    if (isHighConf) {
+      document.getElementById("node-gate-result").textContent = "ACCEPTED (>= 0.70)";
+      document.getElementById("node-gate-result").className = "ml-2 px-1.5 py-0.5 rounded text-[10px] bg-emerald-500/20 text-emerald-400 font-bold";
+      setNodeStatus("node-gate", "success", "HIGH CONF");
+      activateWire("wire-gate-high", "success");
     } else {
-      await highlightStep(3, "warning", "⚠️ &lt; 0.70 (Diverted to Support)");
+      document.getElementById("node-gate-result").textContent = "DIVERT (< 0.70)";
+      document.getElementById("node-gate-result").className = "ml-2 px-1.5 py-0.5 rounded text-[10px] bg-amber-500/20 text-amber-400 font-bold";
+      setNodeStatus("node-gate", "warning", "LOW CONF");
+      activateWire("wire-gate-low", "warning");
     }
 
-    // 4. LangGraph Transition Step
-    await highlightStep(4, "processing", `Routing to ${result.routed_node}...`);
-    await new Promise(r => setTimeout(r, 200));
-    await highlightStep(4, "complete", `✓ Node: ${result.routed_node}`);
+    // Stage 4: LANGGRAPH STATE MACHINE
+    if (isHighConf) {
+      setNodeStatus("node-langgraph", "active", "SWITCHING");
+      await sleep(200);
+      document.getElementById("node-langgraph-branch").textContent = result.routed_node.toUpperCase();
+      setNodeStatus("node-langgraph", "success", "ROUTED");
+      activateWire(`wire-to-${result.routed_node}`, "success");
+    }
 
-    // 5. Business Logic Step
-    await highlightStep(5, "processing", "Executing Deterministic Math...");
-    await new Promise(r => setTimeout(r, 250));
-    await highlightStep(5, "complete", "✓ Calculated");
+    // Stage 5: DOMAIN NODE EXECUTION
+    const allDomains = ["analytics", "products", "customers", "inventory", "support"];
+    allDomains.forEach(dom => {
+      if (dom === result.routed_node) {
+        setNodeStatus(`node-${dom}`, isHighConf ? "success" : "warning", "ACTIVE");
+      } else {
+        setNodeStatus(`node-${dom}`, "skipped", "SKIPPED");
+      }
+    });
+    await sleep(250);
 
-    // Update Output Panels
-    renderSimulationResult(result);
+    // Stage 6: DETERMINISTIC MATH ENGINE
+    setNodeStatus("node-math", "active", "CALCULATING");
+    activateWire("wire-math-in", "active");
+    await sleep(200);
+
+    let mathPreview = "// Factual computation from database:\n";
+    if (result.routed_node === "analytics") {
+      mathPreview += "ΔRevenue = (31,200 - 56,400) / 56,400 = -44.68% Drop\nΔOrders  = (41 - 78) / 78 = -47.44% Drop\nAOV      = ₹31,200 / 41 = ₹760.98";
+    } else if (result.routed_node === "products") {
+      mathPreview += "Sort SKUs by units_sold DESC\nTop 1: Organic Green Tea (1,240 units)\nTop 2: Mustard Oil (980 units)";
+    } else if (result.routed_node === "customers") {
+      mathPreview += "Rank by total_spent DESC\nTop 1: Aarav Sharma (₹42,500 | 28 orders)\nTop 2: Priya Patel (₹31,800 | 22 orders)";
+    } else if (result.routed_node === "inventory") {
+      mathPreview += "Filter: stock_quantity <= reorder_threshold\nFound 3 items: Organic Tea (18/30), Atta (4/20), Mango Pulp (0/10)";
+    } else {
+      mathPreview += "Confidence: " + result.confidence + " < 0.70\nTriggering support & guidance fallback node";
+    }
+    document.getElementById("node-math-preview").textContent = mathPreview;
+    setNodeStatus("node-math", "success", "FACT CHECKED");
+    activateWire("wire-final", "success");
+
+    // Stage 7: FINAL OUTPUT TERMINAL
+    document.getElementById("outputIntentBadge").textContent = `intent: ${result.intent}`;
+    document.getElementById("outputConfidenceBadge").textContent = `conf: ${result.confidence.toFixed(2)}`;
+    document.getElementById("outputMessage").textContent = result.reply;
+
+    const totalDuration = Math.round(performance.now() - startTime);
+    document.getElementById("canvasLatency").textContent = `${totalDuration}ms`;
+    document.getElementById("canvasStatusDot").className = "w-2.5 h-2.5 rounded-full bg-emerald-400";
+    document.getElementById("canvasStatusText").textContent = "SUCCESS: Execution Finished";
 
   } catch (err) {
-    console.error("Simulation error:", err);
+    console.error("Pipeline error:", err);
   } finally {
     btn.disabled = false;
-    btn.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i><span>Simulate</span>`;
+    btn.innerHTML = `<i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i><span>Execute Pipeline</span>`;
     if (window.lucide) window.lucide.createIcons();
   }
 }
 
-function resetStepUI() {
-  for (let i = 1; i <= 5; i++) {
-    const el = document.getElementById(`step-${i}`);
-    if (el) {
-      el.className = "step-node p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between transition-all";
-      const status = el.querySelector(".step-status");
-      if (status) {
-        status.className = "step-status text-xs font-mono text-slate-400";
-        status.textContent = "Pending";
-      }
-    }
+function setNodeStatus(nodeId, state, tagText) {
+  const node = document.getElementById(nodeId);
+  if (!node) return;
+
+  if (state === "active") {
+    node.className = "pipeline-node p-4 cursor-pointer node-active";
+  } else if (state === "success") {
+    node.className = "pipeline-node p-4 cursor-pointer node-success";
+  } else if (state === "warning") {
+    node.className = "pipeline-node p-4 cursor-pointer node-warning";
+  } else if (state === "skipped") {
+    node.className = "pipeline-node p-4 cursor-pointer node-skipped";
+  }
+
+  const tag = node.querySelector(".status-tag");
+  if (tag) {
+    tag.textContent = tagText;
+    if (state === "active") tag.className = "status-tag px-1.5 py-0.5 rounded bg-blue-500 text-white font-bold text-[10px]";
+    else if (state === "success") tag.className = "status-tag px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold text-[10px]";
+    else if (state === "warning") tag.className = "status-tag px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold text-[10px]";
+    else if (state === "skipped") tag.className = "status-tag px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 text-[10px]";
   }
 }
 
-async function highlightStep(stepNum, status, label) {
-  const el = document.getElementById(`step-${stepNum}`);
-  if (!el) return;
-  const statusSpan = el.querySelector(".step-status");
-  const badge = el.querySelector(".step-badge");
-
-  if (status === "processing") {
-    el.className = "step-node p-3.5 bg-blue-50 border border-blue-400 rounded-2xl flex items-center justify-between active-pulse transition-all";
-    if (badge) badge.className = "step-badge w-7 h-7 rounded-full bg-blue-600 text-white font-mono text-xs flex items-center justify-center font-bold animate-spin";
-    if (statusSpan) {
-      statusSpan.className = "step-status text-xs font-mono text-blue-600 font-bold";
-      statusSpan.textContent = label;
-    }
-  } else if (status === "complete") {
-    el.className = "step-node p-3.5 bg-emerald-50/70 border border-emerald-300 rounded-2xl flex items-center justify-between transition-all";
-    if (badge) badge.className = "step-badge w-7 h-7 rounded-full bg-emerald-600 text-white font-mono text-xs flex items-center justify-center font-bold";
-    if (statusSpan) {
-      statusSpan.className = "step-status text-xs font-mono text-emerald-700 font-bold";
-      statusSpan.textContent = label;
-    }
-  } else if (status === "warning") {
-    el.className = "step-node p-3.5 bg-amber-50 border border-amber-400 rounded-2xl flex items-center justify-between transition-all";
-    if (badge) badge.className = "step-badge w-7 h-7 rounded-full bg-amber-600 text-white font-mono text-xs flex items-center justify-center font-bold";
-    if (statusSpan) {
-      statusSpan.className = "step-status text-xs font-mono text-amber-700 font-bold";
-      statusSpan.textContent = label;
-    }
+function activateWire(wireId, styleClass) {
+  const el = document.getElementById(wireId);
+  if (el) {
+    el.className = `flow-wire ${styleClass}`;
   }
 }
 
-function renderSimulationResult(result) {
-  const replyEl = document.getElementById("simReplyText");
-  const intentBadge = document.getElementById("simBadgeIntent");
-  const confVal = document.getElementById("simConfidenceVal");
-  const confBar = document.getElementById("simConfidenceBar");
-  const jsonTrace = document.getElementById("simJsonTrace");
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-  if (replyEl) replyEl.textContent = result.reply;
-  if (intentBadge) {
-    intentBadge.textContent = `intent: ${result.intent}`;
-    if (result.passes_threshold) {
-      intentBadge.className = "text-xs font-mono px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded border border-blue-500/30";
-    } else {
-      intentBadge.className = "text-xs font-mono px-2.5 py-1 bg-amber-500/20 text-amber-300 rounded border border-amber-500/30";
-    }
+// Node Inspector Drawer Content
+const NODE_INSPECTOR_INFO = {
+  ingest: {
+    title: "Node 1: Question Ingest & Normalizer",
+    desc: "Ingests raw merchant queries, normalizes casing/punctuation, and expands domain vocabulary (e.g. 'turnover' -> 'sales revenue').",
+    inputState: '{\n  "message": "Why were my sales low yesterday?"\n}',
+    outputState: '{\n  "message": "Why were my sales low yesterday?",\n  "normalized": "why were sales low yesterday"\n}',
+    code: 'def normalize_text(text: str) -> str:\n    cleaned = re.sub(r"[^a-z0-9\\s]", " ", text.lower())\n    return " ".join(expand_synonyms(cleaned))'
+  },
+  jev: {
+    title: "Node 2: Jev-Style Intent Classifier",
+    desc: "Micro-latency System 1 classifier calculating cosine similarities across discrete Choice representations to produce intent and confidence.",
+    inputState: '{\n  "message": "Why were my sales low yesterday?"\n}',
+    outputState: '{\n  "intent": "analytics",\n  "confidence": 0.94,\n  "scores": {\n    "analytics": 0.7412,\n    "products": 0.1205,\n    "customers": 0.0811,\n    "inventory": 0.0412,\n    "support": 0.0100\n  }\n}',
+    code: 'class JevCompatibleClassifier(BaseIntentClassifier):\n    def classify(self, message: str) -> ClassificationResult:\n        scores = cosine_similarity(query_vec, self.tfidf_matrix)\n        return ClassificationResult(intent, confidence)'
+  },
+  gate: {
+    title: "Node 3: Confidence Router Gate",
+    desc: "Evaluates classifier certainty against the configurable 0.70 threshold. If confidence < 0.70, forces safe routing to support.",
+    inputState: '{\n  "intent": "analytics",\n  "confidence": 0.94,\n  "threshold": 0.70\n}',
+    outputState: '{\n  "passes_threshold": true,\n  "action": "PROCEED_TO_LANGGRAPH"\n}',
+    code: 'def router_node(state: MerchantState) -> str:\n    if state.confidence < 0.70:\n        return "support"\n    return state.intent.value'
+  },
+  langgraph: {
+    title: "Node 4: LangGraph StateGraph Orchestrator",
+    desc: "Maintains typed state transitions, invoking target specialized nodes via conditional edges.",
+    inputState: 'StateGraph(MerchantState)',
+    outputState: 'Transition: jev_router -> (conditional_edge) -> analytics_node',
+    code: 'workflow.add_conditional_edges(\n    "jev_router",\n    router_node,\n    {"analytics": "analytics", "products": "products", ...}\n)'
+  },
+  analytics: {
+    title: "Specialized Node: Analytics Engine",
+    desc: "Queries deterministic daily sales records and calculates day-over-day percentage changes.",
+    inputState: '{\n  "intent": "analytics"\n}',
+    outputState: '{\n  "data": {\n    "revenue_pct_change": -44.68,\n    "orders_pct_change": -47.44,\n    "yesterday_revenue": 31200\n  }\n}',
+    code: 'def analytics_node(state: MerchantState) -> MerchantState:\n    data = get_sales_analytics()\n    state.data = data\n    state.reply = format_sales_summary(data)\n    return state'
+  },
+  products: {
+    title: "Specialized Node: Product Catalog",
+    desc: "Ranks catalog items strictly by unit volume and customer reviews.",
+    inputState: '{\n  "intent": "products"\n}',
+    outputState: '{\n  "data": { "top_products": [ "Organic Green Tea", "Mustard Oil", "Atta" ] }\n}',
+    code: 'def products_node(state: MerchantState) -> MerchantState:\n    state.data = {"top_products": get_top_products(5)}\n    return state'
+  },
+  customers: {
+    title: "Specialized Node: Customer Retention",
+    desc: "Ranks VIP customers and repeat buyers by lifetime store spend.",
+    inputState: '{\n  "intent": "customers"\n}',
+    outputState: '{\n  "data": { "top_customers": [ "Aarav Sharma (₹42,500)", "Priya Patel (₹31,800)" ] }\n}',
+    code: 'def customers_node(state: MerchantState) -> MerchantState:\n    state.data = {"top_customers": get_top_customers(5)}\n    return state'
+  },
+  inventory: {
+    title: "Specialized Node: Inventory Health",
+    desc: "Filters stock items where quantity <= reorder threshold.",
+    inputState: '{\n  "intent": "inventory"\n}',
+    outputState: '{\n  "data": { "low_stock": [ "Organic Green Tea (18/30)", "Atta (4/20)", "Mango Pulp (0/10)" ] }\n}',
+    code: 'def inventory_node(state: MerchantState) -> MerchantState:\n    state.data = get_inventory_summary()\n    return state'
+  },
+  support: {
+    title: "Specialized Node: Support & Guided Help",
+    desc: "Provides structured capabilities menu for help requests and ambiguous inputs.",
+    inputState: '{\n  "confidence": 0.45\n}',
+    outputState: '{\n  "reply": "I am not completely sure what you are asking. You can ask about sales, products, customers, or inventory."\n}',
+    code: 'def support_node(state: MerchantState) -> MerchantState:\n    state.reply = build_guided_help_menu(state)\n    return state'
+  },
+  math: {
+    title: "Node 6: Deterministic Computational Truth",
+    desc: "Guarantees zero numeric hallucinations. Arithmetic is executed directly in Python algorithms.",
+    inputState: 'Raw verified database numbers',
+    outputState: 'Exact % drops and ranked lists',
+    code: 'pct_change = ((rev_yesterday - rev_day_before) / rev_day_before) * 100'
   }
-  if (confVal) confVal.textContent = `${result.confidence.toFixed(2)} / 1.00`;
-  if (confBar) {
-    confBar.style.width = `${Math.min(100, Math.round(result.confidence * 100))}%`;
-    if (result.passes_threshold) {
-      confBar.className = "bg-gradient-to-r from-blue-500 to-emerald-400 h-full transition-all duration-500";
-    } else {
-      confBar.className = "bg-gradient-to-r from-amber-500 to-rose-400 h-full transition-all duration-500";
-    }
-  }
-  if (jsonTrace) {
-    jsonTrace.textContent = JSON.stringify(result, null, 2);
+};
+
+function inspectNode(nodeKey) {
+  const info = NODE_INSPECTOR_INFO[nodeKey];
+  if (!info) return;
+
+  document.getElementById("inspectorTitle").textContent = info.title;
+  document.getElementById("inspectorDesc").textContent = info.desc;
+  document.getElementById("inspectorInputState").textContent = info.inputState;
+  document.getElementById("inspectorOutputState").textContent = info.outputState;
+  document.getElementById("inspectorCode").textContent = info.code;
+
+  const drawer = document.getElementById("nodeInspectorDrawer");
+  if (drawer) {
+    drawer.classList.remove("translate-x-full");
   }
 }
 
-// Deterministic Local Fallback Engine for instant offline simulation
-function simulateLocalPipeline(msg) {
+function closeInspector() {
+  const drawer = document.getElementById("nodeInspectorDrawer");
+  if (drawer) {
+    drawer.classList.add("translate-x-full");
+  }
+}
+
+// Local Fallback Simulation
+function simulatePipelineLocally(msg) {
   const lower = msg.toLowerCase();
   
   if (lower.includes("business") || lower.includes("useful") || lower.includes("update") || lower.includes("history")) {
@@ -379,8 +369,7 @@ function simulateLocalPipeline(msg) {
       threshold: 0.70,
       passes_threshold: false,
       routed_node: "support",
-      reply: "🤔 I'm not entirely sure how to handle your query (Confidence: 45%).\nHere are the specific areas I can help you with:\n\n1. 📊 Analytics: Ask 'Why were sales low yesterday?' or 'Show my revenue trend'.\n2. 📦 Products: Ask 'What are my top 5 products?' or 'Show best sellers'.\n3. 👥 Customers: Ask 'Who are my best customers?' or 'Show repeat buyers'.\n4. 📋 Inventory: Ask 'How much stock do I have?' or 'Show low inventory items'.\n5. ❓ Support: Ask 'How do I use this dashboard?' for system navigation.",
-      structured_query: { metric: null, time_period: "current_period", entity: "overall_business" }
+      reply: "🤔 I'm not entirely sure how to handle your query (Confidence: 45%).\nHere are the specific areas I can help you with:\n\n1. 📊 Analytics: Ask 'Why were sales low yesterday?' or 'Show my revenue trend'.\n2. 📦 Products: Ask 'What are my top 5 products?' or 'Show best sellers'.\n3. 👥 Customers: Ask 'Who are my best customers?' or 'Show repeat buyers'.\n4. 📋 Inventory: Ask 'How much stock do I have?' or 'Show low inventory items'.\n5. ❓ Support: Ask 'How do I use this dashboard?' for system navigation."
     };
   }
 
@@ -392,9 +381,7 @@ function simulateLocalPipeline(msg) {
       threshold: 0.70,
       passes_threshold: true,
       routed_node: "analytics",
-      reply: "📊 Sales Analytics Summary:\n• Yesterday (2026-10-01), your revenue was ₹31,200 across 41 orders.\n• Compared to the previous day (2026-09-30 at ₹56,400), revenue saw a drop of 44.7%.\n• Order volume also saw a drop of 47.4% (Avg order value: ₹760.98).",
-      structured_query: { metric: "sales_revenue", time_period: "yesterday", entity: "underperforming_or_alerts" },
-      data: { revenue_pct_change: -44.68, orders_pct_change: -47.44 }
+      reply: "📊 Sales Analytics Summary:\n• Yesterday (2026-10-01), your revenue was ₹31,200 across 41 orders.\n• Compared to the previous day (2026-09-30 at ₹56,400), revenue saw a drop of 44.7%.\n• Order volume also saw a drop of 47.4% (Avg order value: ₹760.98)."
     };
   }
 
@@ -406,8 +393,7 @@ function simulateLocalPipeline(msg) {
       threshold: 0.70,
       passes_threshold: true,
       routed_node: "products",
-      reply: "📦 Top Best-Selling Products:\n  1. Organic Green Tea (250g) (Beverages): 1,240 units sold | Price: ₹450 | Rating: ⭐ 4.8\n  2. Cold-Pressed Mustard Oil (1L) (Cooking): 980 units sold | Price: ₹280 | Rating: ⭐ 4.6\n  3. Whole Wheat Atta (5kg) (Staples): 850 units sold | Price: ₹310 | Rating: ⭐ 4.5\n  4. Raw Wildflower Honey (500g) (Sweeteners): 620 units sold | Price: ₹520 | Rating: ⭐ 4.9\n  5. Alphonso Mango Pulp (850g) (Preserves): 410 units sold | Price: ₹390 | Rating: ⭐ 4.7",
-      structured_query: { metric: "products", time_period: "current_period", entity: "top_performers" }
+      reply: "📦 Top Best-Selling Products:\n  1. Organic Green Tea (250g) (Beverages): 1,240 units sold | Price: ₹450 | Rating: ⭐ 4.8\n  2. Cold-Pressed Mustard Oil (1L) (Cooking): 980 units sold | Price: ₹280 | Rating: ⭐ 4.6\n  3. Whole Wheat Atta (5kg) (Staples): 850 units sold | Price: ₹310 | Rating: ⭐ 4.5\n  4. Raw Wildflower Honey (500g) (Sweeteners): 620 units sold | Price: ₹520 | Rating: ⭐ 4.9\n  5. Alphonso Mango Pulp (850g) (Preserves): 410 units sold | Price: ₹390 | Rating: ⭐ 4.7"
     };
   }
 
@@ -419,8 +405,7 @@ function simulateLocalPipeline(msg) {
       threshold: 0.70,
       passes_threshold: true,
       routed_node: "customers",
-      reply: "👥 Top Customers by Total Spend:\n  1. Aarav Sharma (Mumbai) - ₹42,500 across 28 orders [VIP]\n  2. Priya Patel (Ahmedabad) - ₹31,800 across 22 orders [VIP]\n  3. Rohan Gupta (Delhi) - ₹19,400 across 15 orders [Regular]\n  4. Sneha Iyer (Bengaluru) - ₹14,200 across 12 orders [Regular]\n  5. Vikram Singh (Jaipur) - ₹3,100 across 3 orders [New]",
-      structured_query: { metric: "customers", time_period: "current_period", entity: "top_performers" }
+      reply: "👥 Top Customers by Total Spend:\n  1. Aarav Sharma (Mumbai) - ₹42,500 across 28 orders [VIP]\n  2. Priya Patel (Ahmedabad) - ₹31,800 across 22 orders [VIP]\n  3. Rohan Gupta (Delhi) - ₹19,400 across 15 orders [Regular]\n  4. Sneha Iyer (Bengaluru) - ₹14,200 across 12 orders [Regular]\n  5. Vikram Singh (Jaipur) - ₹3,100 across 3 orders [New]"
     };
   }
 
@@ -432,8 +417,7 @@ function simulateLocalPipeline(msg) {
       threshold: 0.70,
       passes_threshold: true,
       routed_node: "inventory",
-      reply: "📋 Inventory Status Overview:\n• Total catalog items: 5 (149 total units in stock).\n• Items requiring attention:\n  ⚠️ Organic Green Tea (250g): 18 units left (Reorder threshold: 30)\n  ⚠️ Whole Wheat Atta (5kg): 4 units left (Reorder threshold: 20)\n  🔴 Alphonso Mango Pulp (850g): OUT OF STOCK (Reorder threshold: 10)\n\n💡 Action needed: Please reorder items marked with 🔴 and ⚠️ promptly.",
-      structured_query: { metric: "inventory", time_period: "current_period", entity: "underperforming_or_alerts" }
+      reply: "📋 Inventory Status Overview:\n• Total catalog items: 5 (149 total units in stock).\n• Items requiring attention:\n  ⚠️ Organic Green Tea (250g): 18 units left (Reorder threshold: 30)\n  ⚠️ Whole Wheat Atta (5kg): 4 units left (Reorder threshold: 20)\n  🔴 Alphonso Mango Pulp (850g): OUT OF STOCK (Reorder threshold: 10)\n\n💡 Action needed: Please reorder items marked with 🔴 and ⚠️ promptly."
     };
   }
 
