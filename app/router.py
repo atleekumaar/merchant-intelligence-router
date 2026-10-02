@@ -1,9 +1,10 @@
 """
-Confidence Router module.
-Directs graph execution to specialized nodes or falls back to support based on confidence threshold.
+Confidence Router module for Merchant Intelligence Router.
+Evaluates classifier certainty against a configurable threshold to determine execution branch.
 """
 
 import os
+from typing import Union
 
 try:
     from dotenv import load_dotenv
@@ -11,7 +12,7 @@ try:
 except ImportError:
     pass
 
-from app.state import MerchantState
+from app.state import MerchantState, Intent
 
 DEFAULT_THRESHOLD: float = 0.70
 
@@ -31,19 +32,20 @@ def get_confidence_threshold() -> float:
 
 def router_node(state: MerchantState) -> str:
     """
-    Conditional routing function for LangGraph.
-    Evaluates confidence score against the threshold.
-    Returns the name of the next node to execute.
+    LangGraph Conditional Routing Function.
+    Evaluates confidence score against the threshold:
+      - If confidence < threshold: divert to 'support' node for clarification.
+      - Otherwise: route directly to the detected intent handler.
     """
     threshold = get_confidence_threshold()
-    
-    # If confidence is below threshold, divert to support node for clarification
+
     if state.confidence < threshold:
         return "support"
-    
-    # Otherwise route directly to the classified intent
-    valid_intents = {"analytics", "products", "customers", "inventory", "support"}
-    if state.intent in valid_intents:
-        return state.intent
-    
+
+    if state.intent:
+        intent_str = state.intent.value if isinstance(state.intent, Intent) else str(state.intent)
+        valid_intents = {"analytics", "products", "customers", "inventory", "support"}
+        if intent_str in valid_intents:
+            return intent_str
+
     return "support"

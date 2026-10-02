@@ -1,302 +1,315 @@
-# 🛍️ VyaparMitra: Merchant Intelligence Router
+# 🛍️ Merchant Intelligence Router (VyaparMitra)
+### *A Zero-Cost Local Jev-Compatible Architecture with LangGraph*
 
-A production-grade AI agent prototype demonstrating **Fast Intent Classification (Jev / TypeSafe)**, **Confidence-Based Guardrails**, **LangGraph StateGraph Routing**, and **Strict Deterministic Data Separation**.
-
-Inspired by System 1 / System 2 cognitive architectures, this project processes natural language merchant inquiries (sales analytics, inventory stock, top-selling products, VIP customers, and dashboard help) with high speed, predictable cost, and zero numerical hallucinations.
+> ⚠️ **IMPORTANT CLARIFICATION**:  
+> **This project reproduces the architectural pattern of a Jev classifier locally for learning and zero-cost development. It is not the official TypeSafe AI Jev service and does not use the TypeSafe AI Jev API.**  
+> It is an educational and modular compatibility layer (`JevCompatibleClassifier`) designed to run 100% locally at ₹0 cost without external API keys, while remaining architecturally identical to the Jev + LangGraph design pattern.
 
 ---
 
 ## 📑 Table of Contents
-1. [What the Project Does](#1-what-the-project-does)
-2. [Architecture](#2-architecture)
-3. [Mermaid Architecture Diagram](#3-mermaid-architecture-diagram)
-4. [Why Jev is Used (System 1 vs. System 2)](#4-why-jev-is-used-system-1-vs-system-2)
-5. [What TypeSafeClassifier Does](#5-what-typesafeclassifier-does)
-6. [What Choice Does](#6-what-choice-does)
-7. [What Confidence Means](#7-what-confidence-means)
-8. [Why Confidence Routing Exists](#8-why-confidence-routing-exists)
-9. [What LangGraph Does](#9-what-langgraph-does)
-10. [What StateGraph Does](#10-what-stategraph-does)
-11. [What Nodes Are](#11-what-nodes-are)
-12. [What Edges Are](#12-what-edges-are)
-13. [What Conditional Edges Are](#13-what-conditional-edges-are)
-14. [Where the LLM is Used](#14-where-the-llm-is-used)
-15. [Why Deterministic Business Logic is Separated from the LLM](#15-why-deterministic-business-logic-is-separated-from-the-llm)
-16. [Installation](#16-installation)
-17. [Environment Variables Configuration](#17-environment-variables-configuration)
-18. [How to Run (Interactive CLI)](#18-how-to-run-interactive-cli)
-19. [How to Run Tests](#19-how-to-run-tests)
-20. [Example Conversations](#20-example-conversations)
+1. [What is this Project?](#1-what-is-this-project)
+2. [Architecture Overview](#2-architecture-overview)
+3. [Mermaid Architecture Flowchart](#3-mermaid-architecture-flowchart)
+4. [The Jev-Compatible Local Classifier](#4-the-jev-compatible-local-classifier)
+5. [Choice & Intent Abstractions](#5-choice--intent-abstractions)
+6. [TF-IDF & Cosine Similarity Explanation](#6-tf-idf--cosine-similarity-explanation)
+7. [Confidence Calculation & Ambiguity Detection](#7-confidence-calculation--ambiguity-detection)
+8. [Confidence Routing Guardrail](#8-confidence-routing-guardrail)
+9. [LangGraph StateGraph Integration](#9-langgraph-stategraph-integration)
+10. [Specialized Business Nodes & Deterministic Logic](#10-specialized-business-nodes--deterministic-logic)
+11. [Why Not Simply Use an LLM?](#11-why-not-simply-use-an-llm)
+12. [How to Replace with Real Jev Later](#12-how-to-replace-with-real-jev-later)
+13. [Limitations of TF-IDF Classification](#13-limitations-of-tf-idf-classification)
+14. [Installation & Requirements](#14-installation--requirements)
+15. [How to Run (Interactive CLI & Explain Mode)](#15-how-to-run-interactive-cli--explain-mode)
+16. [How to Run Automated Tests](#16-how-to-run-automated-tests)
+17. [Project File Tree](#17-project-file-tree)
 
 ---
 
-## 1. What the Project Does
-Merchant Intelligence Router acts as an intelligent assistant for merchants. It receives natural language questions from business owners—such as:
-* *"Why were my sales low yesterday?"*
-* *"Show me my top 5 products."*
-* *"Which customers bought from me most?"*
-* *"How much inventory do I have?"*
-* *"I need help using the dashboard."*
+## 1. What is this Project?
+**Merchant Intelligence Router (VyaparMitra)** is an AI agent architecture for merchants. It receives natural language questions across five business domains:
+* 📊 **`analytics`**: *"How much did I sell today?"*, *"Why were my sales low yesterday?"*
+* 📦 **`products`**: *"Show me my top 5 products"*, *"What is my best selling product?"*
+* 👥 **`customers`**: *"Who are my repeat customers?"*, *"Which customers bought from me most?"*
+* 📋 **`inventory`**: *"Which products are low in stock?"*, *"What should I reorder?"*
+* ❓ **`support`**: *"Help me"*, *"How does this work?"*, *"How do I use this dashboard?"*
 
-The system classifies user intent, measures confidence, routes the query through a LangGraph state machine, queries deterministic business records, and outputs an accurate executive summary.
-
----
-
-## 2. Architecture
-The system employs a dual-stage execution model:
-1. **Classifier Layer (Jev / TypeSafe)**: Micro-latency categorization into discrete business domains (`analytics`, `products`, `customers`, `inventory`, `support`).
-2. **Confidence Gate**: A deterministic routing function comparing classification confidence against a configurable threshold (default `0.70`).
-3. **State Machine (LangGraph)**: An explicit graph managing state transitions and invoking the specialized domain node.
-4. **Deterministic Calculation Engines**: Pure Python calculations over verified data for sales metrics, inventory alerts, and product rankings.
-5. **LLM Synthesis & Extraction**: Optional parameter extraction via Pydantic (`MerchantQuery`) and natural language summaries without hallucinating figures.
+The system classifies user intent in sub-milliseconds, checks classifier certainty via a confidence threshold, routes execution using a LangGraph state machine, calculates factual business metrics deterministically, and formats a clear response.
 
 ---
 
-## 3. Mermaid Architecture Diagram
+## 2. Architecture Overview
 
-```mermaid
-flowchart TD
-    User([Merchant Query]) --> Jev[Jev Intent Classifier\nTypeSafeClassifier]
-    Jev --> State[Update MerchantState\nintent + confidence]
-    State --> Gate{Confidence >= Threshold\nDefault: 0.70?}
-    
-    Gate -- No (Ambiguous / Low Confidence) --> SupportNode[support_node\nHelp Center & Clarification]
-    Gate -- Yes --> Router{Intent?}
-    
-    Router -- analytics --> AnalyticsNode[analytics_node\nMath: Day-over-Day % Drop]
-    Router -- products --> ProductsNode[products_node\nCatalog Ranking by Units Sold]
-    Router -- customers --> CustomersNode[customers_node\nVIP Buyers Ranking by Total Spend]
-    Router -- inventory --> InventoryNode[inventory_node\nStock Counts & Reorder Thresholds]
-    Router -- support --> SupportNode
-    
-    AnalyticsNode --> FinalState[Final MerchantState Response]
-    ProductsNode --> FinalState
-    CustomersNode --> FinalState
-    InventoryNode --> FinalState
-    SupportNode --> FinalState
-    FinalState --> CLI([Merchant CLI Output])
+```text
+USER MESSAGE
+      ↓
+LOCAL JEV-COMPATIBLE CLASSIFIER (TF-IDF + Cosine Similarity)
+      ↓
+INTENT + CONFIDENCE
+      ↓
+CONFIDENCE ROUTER (Threshold: 0.70)
+      ↓
+LANGGRAPH (StateGraph)
+      ↓
+SPECIALIZED NODE (Analytics / Products / Customers / Inventory / Support)
+      ↓
+DETERMINISTIC BUSINESS LOGIC (Pure Python Math & DB Queries)
+      ↓
+OPTIONAL LLM EXPLANATION (Downstream executive synthesis)
+      ↓
+RESPONSE
 ```
 
 ---
 
-## 4. Why Jev is Used (System 1 vs. System 2)
-In human psychology, **System 1** represents fast, instinctive, pattern-matching thinking, while **System 2** is slow, deliberative reasoning.
-* Standard LLMs (GPT-4o, Claude) act as System 2: high latency, token costs, and non-deterministic routing.
-* **Jev** acts as System 1: an ultra-fast classification model optimized for discrete decision boundaries. Using Jev to classify before calling heavy LLMs cuts latency by 80% and reduces API expenses.
+## 3. Mermaid Architecture Flowchart
+
+```mermaid
+flowchart TD
+    User([User Merchant Query]) --> LocalJev[Local Jev-Compatible Classifier\nJevCompatibleClassifier]
+    LocalJev --> State[Update MerchantState\nintent + confidence]
+    State --> Gate{Confidence >= 0.70?}
+    
+    Gate -- No (Ambiguous / Low Confidence) --> SupportNode[support_node\nHelp Center & Clarification]
+    Gate -- Yes --> Router{Intent?}
+    
+    Router -- analytics --> AnalyticsNode[analytics_node\nMath: Period-over-Period Delta]
+    Router -- products --> ProductsNode[products_node\nCatalog Ranking by Sales]
+    Router -- customers --> CustomersNode[customers_node\nVIP Spend Ranking]
+    Router -- inventory --> InventoryNode[inventory_node\nStock & Reorder Alerts]
+    Router -- support --> SupportNode
+    
+    AnalyticsNode --> FinalState[Final MerchantState reply]
+    ProductsNode --> FinalState
+    CustomersNode --> FinalState
+    InventoryNode --> FinalState
+    SupportNode --> FinalState
+    FinalState --> CLI([Merchant CLI / Output])
+```
 
 ---
 
-## 5. What TypeSafeClassifier Does
-`TypeSafeClassifier` is a LangChain-compatible runnable designed for structured, probabilistic evaluation. Instead of returning free-form text that must be parsed or guarded, it outputs strongly typed classification objects containing choices and confidence distributions.
+## 4. The Jev-Compatible Local Classifier
+Instead of paying for API tokens or introducing network latency for routine routing, the project provides [`JevCompatibleClassifier`](file:///C:/Users/atuls/.gemini/antigravity/scratch/merchant-agent/app/classifier.py#L90-L200) which implements the [`BaseIntentClassifier`](file:///C:/Users/atuls/.gemini/antigravity/scratch/merchant-agent/app/classifier.py#L74-L88) interface:
+
+```python
+class BaseIntentClassifier(ABC):
+    @abstractmethod
+    def classify(self, message: str) -> ClassificationResult:
+        pass
+
+    @abstractmethod
+    def explain(self, message: str) -> Dict[str, Any]:
+        pass
+```
+
+This guarantees clean architectural decoupling: the LangGraph engine and business nodes only interact with `BaseIntentClassifier`.
 
 ---
 
-## 6. What Choice Does
-`Choice` specifies a discrete set of target categories (e.g. `analytics`, `products`, `customers`, `inventory`, `support`) along with semantic instructions. It forces the classifier to evaluate probability masses strictly across allowable states.
+## 5. Choice & Intent Abstractions
+Inspired by Jev's typed categorical structure, we define discrete choices with descriptions and example phrases:
+
+```python
+class Choice(BaseModel):
+    name: str
+    description: str
+    examples: list[str]
+
+class Intent(str, Enum):
+    ANALYTICS = "analytics"
+    PRODUCTS = "products"
+    CUSTOMERS = "customers"
+    INVENTORY = "inventory"
+    SUPPORT = "support"
+```
 
 ---
 
-## 7. What Confidence Means
-Confidence is a normalized float between `0.0` and `1.0` indicating the classifier's certainty.
-* **$1.0$**: Absolute categorical certainty (e.g., unambiguous keyword and intent match).
-* **$< 0.70$**: Ambiguity, conflicting signals, or an out-of-domain query.
+## 6. TF-IDF & Cosine Similarity Explanation
+1. **Corpus Construction**: Every example phrase and semantic description in `MERCHANT_CHOICES` is normalized and indexed.
+2. **TF-IDF Vectorization**: Term Frequency-Inverse Document Frequency transforms raw queries and corpus phrases into spatial vectors with unigrams and bigrams (`ngram_range=(1, 2)`).
+3. **Cosine Similarity**:
+   $$\text{similarity}(\mathbf{q}, \mathbf{d}) = \frac{\mathbf{q} \cdot \mathbf{d}}{\|\mathbf{q}\| \|\mathbf{d}\|}$$
+4. **Aggregation**: The classifier aggregates similarity scores across each discrete intent choice.
 
 ---
 
-## 8. Why Confidence Routing Exists
-Without confidence routing, ambiguous queries (e.g. *"What is the capital of France?"*) would be forced into an arbitrary business node, potentially executing wrong actions or producing nonsensical output. The confidence gate acts as a safety guardrail, intercepting low-confidence inputs and routing them to a guided support node.
+## 7. Confidence Calculation & Ambiguity Detection
+Confidence is not hardcoded to `1.0`. It is dynamically computed using:
+* **Top Similarity Magnitude**: How close the query is to the domain corpus.
+* **Margin of Victory ($\Delta$)**: The difference between the highest score and second-highest score ($\text{margin} = \text{score}_1 - \text{score}_2$).
+* **Ambiguity Handling**: Vague queries (e.g. *"show me something useful"*, *"tell me about my business"*) yield low margins and low similarity, giving confidence scores $< 0.70$.
 
 ---
 
-## 9. What LangGraph Does
-LangGraph provides a cyclic, stateful orchestration framework for agentic workflows. It turns AI execution pipelines into inspectable, testable state machines with checkpointing and state persistence.
+## 8. Confidence Routing Guardrail
+The function [`router_node(state)`](file:///C:/Users/atuls/.gemini/antigravity/scratch/merchant-agent/app/router.py#L32-L47) inspects `state.confidence`:
+
+```python
+if state.confidence < CONFIDENCE_THRESHOLD:  # Default: 0.70
+    return "support"
+return state.intent.value
+```
+
+If the merchant's query is ambiguous or out-of-domain, it never triggers high-stakes actions; it safely diverts to `support_node`.
 
 ---
 
-## 10. What StateGraph Does
-`StateGraph` is the core data structure in LangGraph parameterized by a schema (like `MerchantState`). It maintains the central state object that flows between nodes, ensuring all modifications are typed and predictable.
+## 9. LangGraph StateGraph Integration
+LangGraph orchestrates the lifecycle using [`MerchantState`](file:///C:/Users/atuls/.gemini/antigravity/scratch/merchant-agent/app/state.py#L35-L48):
+1. `START` $\rightarrow$ `jev_router`
+2. `jev_router` $\rightarrow$ Conditional edge via `router_node`
+3. Node execution $\rightarrow$ `analytics`, `products`, `customers`, `inventory`, or `support`
+4. Node $\rightarrow$ `END`
 
 ---
 
-## 11. What Nodes Are
-Nodes are standalone Python functions that receive the current state, perform a dedicated task (e.g. classification, math computation, LLM extraction), and return state updates.
+## 10. Specialized Business Nodes & Deterministic Logic
+All financial, inventory, and ranking metrics are calculated in Python using deterministic data in [`app/data/mock_data.py`](file:///C:/Users/atuls/.gemini/antigravity/scratch/merchant-agent/app/data/mock_data.py). The LLM is **never** permitted to hallucinate numbers.
 
 ---
 
-## 12. What Edges Are
-Edges define unconditional transitions between nodes (e.g. `START -> jev_router` or `analytics -> END`).
+## 11. Why Not Simply Use an LLM?
+Relying solely on an LLM for all tasks introduces significant flaws:
+* **Hallucination Risk**: LLMs cannot be trusted for arithmetic or financial totals.
+* **High Latency & Cost**: Sending every classification step to an LLM adds hundreds of milliseconds and token fees.
+* **Lack of Deterministic Control**: System 1 local classification + LangGraph guarantees deterministic state transitions and testability.
 
 ---
 
-## 13. What Conditional Edges Are
-Conditional edges dynamically route state execution based on a routing function (e.g., `router_node`). They determine the next node based on runtime variables such as `state.intent` and `state.confidence`.
+## 12. How to Replace with Real Jev Later
+Because the system targets `BaseIntentClassifier`, you can swap the local classifier for official TypeSafe AI Jev with one new class:
+
+```python
+class RealJevClassifier(BaseIntentClassifier):
+    def __init__(self, api_key: str):
+        from langchain_typesafe import TypeSafeClassifier, Choice
+        self.client = TypeSafeClassifier(api_key=api_key)
+
+    def classify(self, message: str) -> ClassificationResult:
+        res = self.client.invoke({"state": message, ...})
+        return ClassificationResult(intent=Intent(res.choice), confidence=res.confidence)
+```
+Then update `app/classifier.py`: `default_classifier = RealJevClassifier(api_key=...)`. Zero changes required in LangGraph, routers, or domain nodes!
 
 ---
 
-## 14. Where the LLM is Used
-1. **Structured Parameter Extraction**: Extracting `MerchantQuery` (metric, time period, entity) using Pydantic structured output.
-2. **Executive Synthesis**: Polishing deterministic calculation results into executive summaries.
-3. **Conversational Help**: Assisting merchants with system navigation in `support_node`.
+## 13. Limitations of TF-IDF Classification
+* **Vocabulary Dependency**: Relies on vocabulary overlap and ngram matching.
+* **Complex Multi-Step Logic**: Cannot perform deep relational multi-turn reasoning without downstream agents.
+* **Subtle Semantic Nuance**: For highly complex linguistic ambiguity, fine-tuned embedding models or cloud classification models (like real Jev) offer broader contextual sensitivity.
 
 ---
 
-## 15. Why Deterministic Business Logic is Separated from the LLM
-Financial and inventory data must be **100% accurate**. LLMs are prone to arithmetic errors and hallucination. By calculating metrics (e.g. $\Delta\text{revenue} = -44.68\%$) in pure Python and passing precomputed figures to the LLM solely for phrasing, we guarantee zero hallucination of numbers.
-
----
-
-## 16. Installation
+## 14. Installation & Requirements
 
 ```bash
-# Clone repository
-git clone <your-repo-url>
-cd merchant-agent
+# Clone the repository
+git clone https://github.com/atleekumaar/merchant-intelligence-router.git
+cd merchant-intelligence-router
 
 # Create virtual environment
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+# On Windows:
+.venv\Scripts\activate
+# On Linux/macOS:
+source .venv/bin/activate
 
-# Install dependencies
+# Install lightweight dependencies
 pip install -r requirements.txt
 ```
 
 ---
 
-## 17. Environment Variables Configuration
-
-Copy `.env.example` to `.env`:
-
-```bash
-cp .env.example .env
-```
-
-Configurable parameters:
-```ini
-# (Optional) Jev / TypeSafe API key for live classifier
-TYPESAFE_API_KEY=your_typesafe_key_here
-
-# (Optional) OpenAI API key for structured output & synthesis
-OPENAI_API_KEY=your_openai_key_here
-
-# Confidence routing threshold (default: 0.70)
-CONFIDENCE_THRESHOLD=0.70
-```
-
-*Note: The project features automatic offline fallbacks and runs completely without any external API keys required.*
-
----
-
-## 18. How to Run (Interactive CLI)
+## 15. How to Run (Interactive CLI & Explain Mode)
 
 ```bash
 python main.py
 ```
 
----
-
-## 19. How to Run Tests
-
-```bash
-python -m pytest -v
-```
-
-All 24 unit and integration tests validate:
-* Intent classification accuracy across all categories
-* Ambiguous query fallback triggers
-* Pydantic validation rules
-* LangGraph state mutation and routing
-* Deterministic calculations in business nodes
-
----
-
-## 20. Example Conversations
-
-### Example 1: Sales Analytics
+### Interactive Usage:
 ```text
-Merchant AI > Why were my sales low yesterday?
+You: how much did I sell today?
 
-[Intent]     : analytics
-[Confidence] : 0.98
-[Extracted]  : {'metric': 'sales_revenue', 'time_period': 'yesterday', 'entity': 'underperforming_or_alerts'}
+Intent: analytics
+Confidence: 0.94
 
-[Response]:
+Assistant:
 📊 Sales Analytics Summary:
 • Yesterday (2026-10-01), your revenue was ₹31,200 across 41 orders.
 • Compared to the previous day (2026-09-30 at ₹56,400), revenue saw a drop of 44.7%.
 • Order volume also saw a drop of 47.4% (Avg order value: ₹760.98).
 ```
 
-### Example 2: Product Performance
+### Explain / Debug Mode:
 ```text
-Merchant AI > Show me my top 5 products.
+You: explain how much did I sell today?
 
-[Intent]     : products
-[Confidence] : 0.93
-
-[Response]:
-📦 Top Best-Selling Products:
-  1. Organic Green Tea (250g) (Beverages): 1,240 units sold | Price: ₹450 | Rating: ⭐ 4.8
-  2. Cold-Pressed Mustard Oil (1L) (Cooking): 980 units sold | Price: ₹280 | Rating: ⭐ 4.6
-  3. Whole Wheat Atta (5kg) (Staples): 850 units sold | Price: ₹310 | Rating: ⭐ 4.5
-  4. Raw Wildflower Honey (500g) (Sweeteners): 620 units sold | Price: ₹520 | Rating: ⭐ 4.9
-  5. Alphonso Mango Pulp (850g) (Preserves): 410 units sold | Price: ₹390 | Rating: ⭐ 4.7
-```
-
-### Example 3: Low-Confidence Ambiguous Input
-```text
-Merchant AI > Tell me about quantum physics
-
-[Intent]     : support
-[Confidence] : 0.35
-
-[Response]:
-🤔 I'm not entirely sure how to handle your query (Confidence: 35%).
-Here are the specific areas I can help you with:
-
-1. 📊 Analytics: Ask 'Why were sales low yesterday?' or 'Show my revenue trend'.
-2. 📦 Products: Ask 'What are my top 5 products?' or 'Show best sellers'.
-3. 👥 Customers: Ask 'Who are my best customers?' or 'Show repeat buyers'.
-4. 📋 Inventory: Ask 'How much stock do I have?' or 'Show low inventory items'.
-5. ❓ Support: Ask 'How do I use this dashboard?' for system navigation.
+🔍 [EXPLAIN MODE for 'how much did I sell today?']
+Intent Similarity Scores:
+  analytics    : 0.7412  ██████████████
+  products     : 0.1205  ██
+  customers    : 0.0811  █
+  inventory    : 0.0412  
+  support      : 0.0100  
+Selected Intent   : analytics
+Confidence        : 0.94
+Passes Threshold  : True (Threshold: 0.70)
 ```
 
 ---
 
-## 🎯 Project Structure
+## 16. How to Run Automated Tests
+
+```bash
+python -m pytest -v
+```
+
+```text
+============================= 54 passed in 4.00s ==============================
+```
+
+---
+
+## 17. Project File Tree
 ```text
 merchant-agent/
 │
 ├── app/
 │   ├── __init__.py
-│   ├── state.py            # Pydantic MerchantState & MerchantQuery
-│   ├── classifier.py       # Jev TypeSafeClassifier & semantic engine
-│   ├── router.py           # Confidence routing gate
-│   ├── graph.py            # LangGraph StateGraph topology
-│   ├── llm.py              # LLM extraction & synthesis layer
+│   ├── state.py            # Pydantic MerchantState, Intent Enum, ClassificationResult
+│   ├── choices.py          # Local Choice abstraction & MERCHANT_CHOICES dataset
+│   ├── classifier.py       # BaseIntentClassifier & JevCompatibleClassifier (TF-IDF)
+│   ├── router.py           # Confidence gate router
+│   ├── graph.py            # LangGraph StateGraph workflow topology
+│   ├── llm.py              # Downstream structured extraction & LLM synthesis
 │   │
 │   ├── nodes/
 │   │   ├── __init__.py
-│   │   ├── analytics.py    # Sales metrics & period comparisons
-│   │   ├── products.py     # Product ranking
+│   │   ├── analytics.py    # Deterministic sales calculations & period deltas
+│   │   ├── products.py     # Product ranking by volume
 │   │   ├── customers.py    # VIP customer segmentation
 │   │   ├── inventory.py    # Stock health & reorder alerts
 │   │   └── support.py      # Help & low-confidence fallback
 │   │
 │   └── data/
 │       ├── __init__.py
-│       └── mock_data.py    # Deterministic mock dataset & math helpers
+│       └── mock_data.py    # Deterministic mock merchant database
 │
 ├── tests/
 │   ├── __init__.py
-│   ├── test_state.py       # State schema validation tests
-│   ├── test_classifier.py  # Jev intent & confidence tests
-│   ├── test_router.py      # Confidence threshold gate tests
-│   ├── test_nodes.py       # Node execution tests
-│   └── test_graph.py       # End-to-end LangGraph integration tests
+│   ├── test_state.py       # Pydantic schema validation tests
+│   ├── test_classifier.py  # Local classifier & explain mode tests
+│   ├── test_router.py      # Confidence threshold routing tests
+│   ├── test_nodes.py       # Specialized node execution tests
+│   └── test_graph.py       # End-to-end LangGraph state machine tests
 │
 ├── .env.example
 ├── .gitignore
 ├── requirements.txt
 ├── README.md
-└── main.py                 # Interactive terminal CLI
+└── main.py                 # Interactive terminal CLI with Explain mode
 ```

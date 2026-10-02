@@ -4,7 +4,7 @@ Unit tests for MerchantState schema and validation.
 
 import pytest
 from pydantic import ValidationError
-from app.state import MerchantState, MerchantQuery
+from app.state import MerchantState, MerchantQuery, Intent
 
 
 def test_merchant_state_defaults():
@@ -14,7 +14,7 @@ def test_merchant_state_defaults():
     assert state.confidence == 0.0
     assert state.structured_query is None
     assert state.data == {}
-    assert state.reply is None
+    assert state.reply == ""
 
 
 def test_merchant_state_confidence_validation():

@@ -1,132 +1,231 @@
 """
-Jev Classifier module for Intent Classification and Confidence Scoring.
-Maps natural language merchant queries to categorical choices.
+Local Jev-Compatible Intent Classifier for Merchant Intelligence Router.
+
+NOTE: This is a local compatible implementation running via scikit-learn (TF-IDF + Cosine Similarity)
+at zero cost. It is designed for learning and local development, and is NOT the official TypeSafe AI Jev service.
+It implements the BaseIntentClassifier interface so it can be seamlessly swapped with RealJevClassifier later.
 """
 
-import os
 import re
-from typing import Dict, Tuple, Optional
-from app.state import MerchantState
+from abc import ABC, abstractmethod
+from typing import List, Dict, Any, Optional
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
 
-# Intent categories and their semantic descriptions for Jev Choice
-INTENT_CHOICES: Dict[str, Dict[str, str]] = {
-    "analytics": {
-        "description": "Sales, revenue, growth trends, performance, metrics, comparison between periods",
-        "keywords": [
-            "sale", "sales", "revenue", "trend", "trends", "growth", 
-            "performance", "yesterday", "fall", "fell", "low", "drop", 
-            "dropped", "profit", "earnings", "fluctuation", "why were sales"
-        ]
-    },
-    "products": {
-        "description": "Top products, best-selling products, product performance, product catalog, SKU details",
-        "keywords": [
-            "top product", "top products", "best selling", "best seller", "best sellers",
-            "most sold", "product", "products", "item catalog", "sku", "catalog"
-        ]
-    },
-    "customers": {
-        "description": "Repeat customers, top customers, customer behavior, customer segmentation, VIP buyers",
-        "keywords": [
-            "customer", "customers", "buyer", "buyers", "client", "clients",
-            "who bought", "repeat", "vip", "most loyal", "spent most", "best customer", "best customers"
-        ]
-    },
-    "inventory": {
-        "description": "Stock levels, low inventory, available quantity, inventory status, reorder alerts",
-        "keywords": [
-            "inventory", "stock", "stocks", "quantity", "left", "remaining", 
-            "available", "out of stock", "low stock", "reorder", "warehouse", 
-            "items left", "how many items are left", "how many left", "restock"
-        ]
-    },
-    "support": {
-        "description": "How to use the system, unclear/general questions, dashboard help, greeting, navigation",
-        "keywords": [
-            "help", "support", "dashboard", "how to use", "how do i use", 
-            "guide", "navigate", "hello", "hi", "hey", "assist", "manual", "tutorial"
-        ]
-    }
+from app.choices import Choice, MERCHANT_CHOICES
+from app.state import Intent, ClassificationResult, MerchantState
+
+# Synonym expansions to enhance lexical coverage without external APIs
+SYNONYM_MAP: Dict[str, str] = {
+    # Analytics synonyms
+    "turnover": "sales revenue",
+    "earnings": "sales revenue",
+    "profit": "sales revenue",
+    "income": "sales revenue",
+    "fluctuation": "trend sales drop",
+    "fell": "drop low sales",
+    "fallen": "drop low sales",
+    "dropped": "drop low sales",
+    # Inventory synonyms
+    "remaining": "left stock available quantity",
+    "restock": "reorder low stock inventory",
+    "replenish": "reorder low stock inventory",
+    "shortage": "low stock out of stock inventory",
+    # Customer synonyms
+    "buyer": "customer",
+    "buyers": "customers",
+    "client": "customer",
+    "clients": "customers",
+    "purchaser": "customer",
+    "shopper": "customer",
+    # Products synonyms
+    "sku": "product item",
+    "skus": "products items",
+    "bestseller": "best selling product top",
+    "bestsellers": "best selling products top",
 }
 
+# Domain intent signals to distinguish meaningful queries from purely vague/generic chat
+AMBIGUOUS_PATTERNS = [
+    r"^show me something useful$",
+    r"^tell me about my business$",
+    r"^what should i know\??$",
+    r"^give me an update$",
+    r"^tell me the history.*$"
+]
 
-def classify_intent_jev(message: str) -> Tuple[str, float]:
+
+def normalize_text(text: str) -> str:
     """
-    Classifies the user query into one of the discrete categories with a confidence score.
-    Attempts to use langchain-typesafe if available & configured; otherwise uses a robust
-    semantic scoring engine that accurately models Jev Choice distribution.
+    Normalizes input text: lowercases, strips whitespace, standardizes punctuation,
+    and expands domain-specific merchant synonyms.
     """
-    api_key = os.getenv("TYPESAFE_API_KEY")
+    if not text:
+        return ""
+    cleaned = text.lower().strip()
+    cleaned = re.sub(r'[^a-z0-9\s]', ' ', cleaned)
+    tokens = [w for w in cleaned.split() if w]
     
-    if api_key:
-        try:
-            from langchain_typesafe import Choice, TypeSafeClassifier
-            classifier = TypeSafeClassifier(api_key=api_key)
-            result = classifier.invoke({
-                "state": message,
-                "questions": {
-                    "intent": Choice(
-                        instructions="Classify the merchant query into the single most relevant intent category.",
-                        options=list(INTENT_CHOICES.keys())
-                    )
-                }
-            })
-            if "intent" in result:
-                intent_obj = result["intent"]
-                return intent_obj.choice, float(intent_obj.confidence)
-        except Exception:
-            pass
-
-    return _semantic_rule_classifier(message)
+    expanded_tokens = []
+    for token in tokens:
+        if token in SYNONYM_MAP:
+            expanded_tokens.append(SYNONYM_MAP[token])
+        else:
+            expanded_tokens.append(token)
+            
+    return " ".join(expanded_tokens)
 
 
-def _semantic_rule_classifier(message: str) -> Tuple[str, float]:
+class BaseIntentClassifier(ABC):
     """
-    Deterministic semantic scoring classifier simulating Jev's Choice probability distribution.
-    Uses whole-word and phrase boundary matching to avoid partial token collisions.
+    Abstract Base Class for Intent Classifiers.
+    Defines the standard interface allowing zero-downtime substitution between
+    local heuristic/TF-IDF classifiers and remote TypeSafe/Jev APIs.
     """
-    text = message.lower().strip()
-    words = re.findall(r'\b\w+\b', text)
-    
-    if not words:
-        return "support", 0.30
 
-    scores: Dict[str, float] = {k: 0.0 for k in INTENT_CHOICES}
+    @abstractmethod
+    def classify(self, message: str) -> ClassificationResult:
+        """Classify user query and return a typed ClassificationResult."""
+        pass
 
-    for intent, meta in INTENT_CHOICES.items():
-        for kw in meta["keywords"]:
-            # Match whole phrases or words with word boundaries
-            pattern = r'\b' + re.escape(kw) + r'\b'
-            matches = len(re.findall(pattern, text))
-            if matches > 0:
-                # Multi-word phrases receive higher discriminator weights
-                weight = 3.0 if " " in kw else 1.2
-                scores[intent] += matches * weight
+    @abstractmethod
+    def explain(self, message: str) -> Dict[str, Any]:
+        """Provide detailed score breakdown for debugging and inspection."""
+        pass
 
-    best_intent = max(scores, key=scores.get)
-    max_score = scores[best_intent]
-    total_score = sum(scores.values())
 
-    # Ambiguous or zero-match queries
-    if max_score == 0:
-        return "support", 0.35
+class JevCompatibleClassifier(BaseIntentClassifier):
+    """
+    Zero-cost local classifier utilizing TF-IDF and Cosine Similarity over typed Choices.
+    Simulates Jev's fast categorical probability estimation without calling external paid APIs.
+    """
 
-    # Calculate confidence based on dominance of the winning intent
-    if total_score == max_score:
-        confidence = min(0.82 + (max_score * 0.04), 0.98)
-    else:
-        ratio = max_score / total_score
-        confidence = round(0.45 + (ratio * 0.45), 2)
+    def __init__(self, choices: Optional[List[Choice]] = None, confidence_threshold: float = 0.70):
+        self.choices = choices or MERCHANT_CHOICES
+        self.confidence_threshold = confidence_threshold
+        self._corpus: List[str] = []
+        self._corpus_labels: List[str] = []
+        self._fit_vectorizer()
 
-    return best_intent, round(confidence, 2)
+    def _fit_vectorizer(self) -> None:
+        """Builds TF-IDF index across all choice examples and descriptions."""
+        self._corpus = []
+        self._corpus_labels = []
+
+        for choice in self.choices:
+            # Include description for semantic background
+            self._corpus.append(normalize_text(choice.description))
+            self._corpus_labels.append(choice.name)
+
+            # Include each representative example phrase
+            for example in choice.examples:
+                self._corpus.append(normalize_text(example))
+                self._corpus_labels.append(choice.name)
+
+        self.vectorizer = TfidfVectorizer(
+            ngram_range=(1, 2),
+            sublinear_tf=True
+        )
+        self.tfidf_matrix = self.vectorizer.fit_transform(self._corpus)
+
+    def _calculate_scores(self, message: str) -> Dict[str, float]:
+        """Calculates aggregated cosine similarity scores for each intent."""
+        norm_msg = normalize_text(message)
+        if not norm_msg:
+            return {choice.name: 0.0 for choice in self.choices}
+
+        query_vec = self.vectorizer.transform([norm_msg])
+        similarities = cosine_similarity(query_vec, self.tfidf_matrix)[0]
+
+        scores: Dict[str, float] = {choice.name: 0.0 for choice in self.choices}
+        for idx, sim in enumerate(similarities):
+            label = self._corpus_labels[idx]
+            if sim > scores[label]:
+                scores[label] = float(sim)
+
+        return scores
+
+    def classify(self, message: str) -> ClassificationResult:
+        """
+        Classifies input message and returns predicted Intent with calibrated confidence.
+        """
+        norm_msg = normalize_text(message)
+        raw_scores = self._calculate_scores(message)
+        
+        # Handle empty/unmatched inputs
+        if all(score == 0.0 for score in raw_scores.values()) or not norm_msg:
+            return ClassificationResult(
+                intent=Intent.SUPPORT,
+                confidence=0.30,
+                scores=raw_scores
+            )
+
+        # Check explicitly ambiguous / generic prompts
+        raw_clean = message.lower().strip()
+        for pattern in AMBIGUOUS_PATTERNS:
+            if re.match(pattern, raw_clean):
+                best_intent_name = max(raw_scores, key=raw_scores.get)
+                return ClassificationResult(
+                    intent=Intent(best_intent_name),
+                    confidence=0.45,
+                    scores={k: round(v, 4) for k, v in raw_scores.items()}
+                )
+
+        # Sort intents by similarity score
+        sorted_intents = sorted(raw_scores.items(), key=lambda item: item[1], reverse=True)
+        best_intent_name, top_score = sorted_intents[0]
+        second_score = sorted_intents[1][1] if len(sorted_intents) > 1 else 0.0
+        margin = top_score - second_score
+
+        # Calibrate confidence:
+        if top_score < 0.20:
+            confidence = max(0.35, top_score * 1.5)
+        else:
+            base_conf = 0.70 + (top_score * 0.25)
+            if margin >= 0.15 or second_score == 0.0:
+                confidence = min(0.98, base_conf + 0.05)
+            elif margin < 0.05:
+                confidence = max(0.40, base_conf - 0.25)
+            else:
+                confidence = min(0.90, base_conf)
+
+        confidence = round(float(np.clip(confidence, 0.0, 1.0)), 2)
+
+        return ClassificationResult(
+            intent=Intent(best_intent_name),
+            confidence=confidence,
+            scores={k: round(v, 4) for k, v in raw_scores.items()}
+        )
+
+    def explain(self, message: str) -> Dict[str, Any]:
+        """
+        Debug utility displaying detailed similarity distributions and calculation steps.
+        """
+        result = self.classify(message)
+        explanation = {
+            "input": message,
+            "normalized_input": normalize_text(message),
+            "intent_scores": result.scores,
+            "selected_intent": result.intent.value,
+            "confidence": result.confidence,
+            "threshold": self.confidence_threshold,
+            "passes_threshold": result.confidence >= self.confidence_threshold
+        }
+        return explanation
+
+
+# Default global classifier instance for LangGraph nodes
+default_classifier = JevCompatibleClassifier()
 
 
 def jev_router(state: MerchantState) -> MerchantState:
     """
-    LangGraph node: Executes Jev intent classification and updates state with intent and confidence.
-    Strictly isolated: does NOT execute any business logic.
+    LangGraph node: Classifies user message using the local Jev-compatible classifier.
+    Stores predicted intent and confidence into MerchantState.
+    Strictly isolated: does not perform any business calculations.
     """
-    intent, confidence = classify_intent_jev(state.message)
-    state.intent = intent
-    state.confidence = confidence
+    result = default_classifier.classify(state.message)
+    state.intent = result.intent
+    state.confidence = result.confidence
     return state
