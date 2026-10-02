@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Merchant Intelligence Router — Jev-Style Decision Layer & LangGraph Architecture</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f7ff',
+              100: '#e0effe',
+              500: '#3b82f6',
+              600: '#2563eb',
+              700: '#1d4ed8',
+              800: '#1e40af',
+              900: '#0f172a',
+              950: '#020617',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body class="simple-mode bg-slate-50 text-slate-800 antialiased selection:bg-blue-500 selection:text-white">
+
+  <!-- ========================================================================= -->
+  <!-- 1. TOP NAVIGATION BAR & VIEW SWITCHER                                     -->
+  <!-- ========================================================================= -->
+  <header class="sticky top-0 z-50 glass-panel border-b border-slate-200/80 transition-all duration-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      
+      <!-- Brand Logo & Subtitle -->
+      <div class="flex items-center space-x-3">
+        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+          <i data-lucide="network" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg tracking-tight text-slate-900">Merchant Intelligence Router</span>
+            <span class="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 border border-blue-200">Architecture</span>
+          </div>
+          <p class="text-xs text-slate-500 font-medium hidden sm:block">Jev Decision Layer + Confidence Gate + LangGraph Routing</p>
+        </div>
+      </div>
+
+      <!-- Center Links -->
+      <nav class="hidden md:flex items-center space-x-6 text-sm font-medium text-slate-600">
+        <a href="#what-is-mi" class="hover:text-blue-600 transition-colors">Concept</a>
+        <a href="#architecture" class="hover:text-blue-600 transition-colors">Architecture</a>
+        <a href="#jev-layer" class="hover:text-blue-600 transition-colors">Jev Layer</a>
+        <a href="#confidence-gate" class="hover:text-blue-600 transition-colors">Confidence Gate</a>
+        <a href="#specialized-brains" class="hover:text-blue-600 transition-colors">Business Brains</a>
+        <a href="#live-demo" class="hover:text-blue-600 transition-colors">Live Simulation</a>
+        <a href="#vyaparmitra" class="hover:text-blue-600 transition-colors">Use Case</a>
+      </nav>
+
+      <!-- Right Controls: View Switcher & GitHub Link -->
+      <div class="flex items-center space-x-3">
+        
+        <!-- Simple vs Technical View Toggle -->
+        <div class="bg-slate-200/80 p-1 rounded-xl flex items-center text-xs font-semibold border border-slate-300/60 shadow-inner">
+          <button id="simpleViewBtn" onclick="setViewMode('simple')" class="px-3 py-1.5 rounded-lg transition-all bg-white text-blue-700 shadow-sm flex items-center space-x-1.5">
+            <i data-lucide="eye" class="w-3.5 h-3.5"></i>
+            <span>Simple View</span>
+          </button>
+          <button id="techViewBtn" onclick="setViewMode('tech')" class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 flex items-center space-x-1.5">
+            <i data-lucide="code-2" class="w-3.5 h-3.5"></i>
+            <span>Technical View</span>
+          </button>
+        </div>
+
+        <!-- GitHub Repo Button -->
+        <a href="https://github.com/atleekumaar/merchant-intelligence-router" target="_blank" class="hidden sm:inline-flex items-center space-x-2 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-900 text-white hover:bg-slate-800 shadow-sm transition-all">
+          <i data-lucide="github" class="w-4 h-4"></i>
+          <span>GitHub</span>
+        </a>
+
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ========================================================================= -->
+  <!-- 01 — HERO SECTION                                                         -->
+  <!-- ========================================================================= -->
+  <section class="relative pt-16 pb-20 overflow-hidden">
+    <!-- Subtle Background Glows -->
+    <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[350px] bg-gradient-to-b from-blue-200/40 via-indigo-100/20 to-transparent blur-3xl -z-10 pointer-events-none"></div>
+
+    <div class="max-w-5xl mx-auto px-4 text-center">
+      
+      <!-- Pill Badge -->
+      <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold mb-6 shadow-sm">
+        <span class="w-2 h-2 rounded-full bg-blue-600 animate-ping"></span>
+        <span>Dual-Engine System: Fast Categorical Jev + LangGraph StateGraph</span>
+      </div>
+
+      <!-- Main Headline -->
+      <h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.15] mb-6">
+        Merchant Intelligence, <br />
+        <span class="bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600 bg-clip-text text-transparent">Made Conversational.</span>
+      </h1>
+
+      <!-- Subheading -->
+      <p class="text-lg sm:text-xl text-slate-600 font-normal max-w-3xl mx-auto leading-relaxed mb-10">
+        Turn everyday merchant questions into intelligent, accurate business actions. 
+        Powered by a <strong class="text-slate-900 font-semibold">Jev-style decision layer</strong>, <strong class="text-slate-900 font-semibold">confidence-aware guardrails</strong>, and <strong class="text-slate-900 font-semibold">LangGraph workflow routing</strong>.
+      </p>
+
+      <!-- Quick Search & Interactive Pipeline Trigger -->
+      <div class="max-w-3xl mx-auto mb-6">
+        <div class="glass-panel p-2 rounded-2xl shadow-xl border border-slate-200 flex flex-col sm:flex-row items-center gap-2">
+          <div class="flex-1 flex items-center px-4 w-full">
+            <i data-lucide="sparkles" class="w-5 h-5 text-blue-500 mr-3 shrink-0"></i>
+            <input 
+              id="heroInput" 
+              type="text" 
+              placeholder="Ask anything (e.g. 'Why were my sales low yesterday?')" 
+              value="Why were my sales low yesterday?"
+              class="w-full bg-transparent border-0 focus:ring-0 text-slate-900 placeholder:text-slate-400 text-sm sm:text-base py-2.5 outline-none font-medium"
+            />
+          </div>
+          <button 
+            onclick="runSimulationFromHero()" 
+            class="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center space-x-2 shrink-0"
+          >
+            <span>Run Pipeline</span>
+            <i data-lucide="arrow-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+
+        <!-- Sample Query Chips -->
+        <div class="flex flex-wrap items-center justify-center gap-2 mt-4 text-xs">
+          <span class="text-slate-400 font-medium">Try quick presets:</span>
+          <button onclick="setHeroQuery('Why were my sales low yesterday?')" class="px-3 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg border border-slate-200 transition-all font-medium">📊 Sales Analytics</button>
+          <button onclick="setHeroQuery('Show me my top 5 products.')" class="px-3 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg border border-slate-200 transition-all font-medium">📦 Top Products</button>
+          <button onclick="setHeroQuery('Which customers bought from me most?')" class="px-3 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg border border-slate-200 transition-all font-medium">👥 VIP Customers</button>
+          <button onclick="setHeroQuery('Which products are low in stock?')" class="px-3 py-1 bg-white hover:bg-blue-50 text-slate-700 hover:text-blue-700 rounded-lg border border-slate-200 transition-all font-medium">📋 Low Stock Alert</button>
+          <button onclick="setHeroQuery('Tell me about my business')" class="px-3 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 rounded-lg border border-amber-200 transition-all font-medium flex items-center space-x-1">
+            <i data-lucide="help-circle" class="w-3 h-3 text-amber-600"></i>
+            <span>Ambiguous Query (45% Conf)</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 02 & 03 — WHAT IS MERCHANT INTELLIGENCE & THE PROBLEM                    -->
+  <!-- ========================================================================= -->
+  <section id="what-is-mi" class="py-20 bg-white border-y border-slate-200/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Foundational Concept</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">What is Merchant Intelligence?</h2>
+        <p class="text-slate-600 text-lg">
+          Merchant Intelligence is the ability to turn everyday business data into <strong>useful decisions, insights, and answers</strong> for merchants.
+        </p>
+      </div>
+
+      <!-- The 5-Step Value Journey -->
+      <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 mb-16 relative">
+        
+        <div class="bg-slate-50 border border-slate-200 p-5 rounded-2xl text-center shadow-sm">
+          <div class="w-10 h-10 mx-auto rounded-xl bg-slate-200/70 text-slate-700 flex items-center justify-center font-bold text-sm mb-3">1</div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">Raw Business Data</h4>
+          <p class="text-xs text-slate-500">Sales, SKUs, buyers, orders, stock levels</p>
+        </div>
+
+        <div class="bg-blue-50/60 border border-blue-200/80 p-5 rounded-2xl text-center shadow-sm">
+          <div class="w-10 h-10 mx-auto rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm mb-3">2</div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">Understanding</h4>
+          <p class="text-xs text-slate-500">Extract intent & context from merchant query</p>
+        </div>
+
+        <div class="bg-indigo-50/60 border border-indigo-200/80 p-5 rounded-2xl text-center shadow-sm">
+          <div class="w-10 h-10 mx-auto rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm mb-3">3</div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">Insights</h4>
+          <p class="text-xs text-slate-500">Calculate trends & identify critical bottlenecks</p>
+        </div>
+
+        <div class="bg-emerald-50/60 border border-emerald-200/80 p-5 rounded-2xl text-center shadow-sm">
+          <div class="w-10 h-10 mx-auto rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm mb-3">4</div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">Decisions</h4>
+          <p class="text-xs text-slate-500">Reorder stock, boost discounts, reward VIPs</p>
+        </div>
+
+        <div class="bg-purple-50/60 border border-purple-200/80 p-5 rounded-2xl text-center shadow-sm">
+          <div class="w-10 h-10 mx-auto rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold text-sm mb-3">5</div>
+          <h4 class="font-bold text-slate-900 text-sm mb-1">Action</h4>
+          <p class="text-xs text-slate-500">Execution in store operations with 100% certainty</p>
+        </div>
+
+      </div>
+
+      <!-- Problem Statement: 4 Silos -->
+      <div class="bg-slate-900 rounded-3xl p-8 sm:p-12 text-white shadow-2xl relative overflow-hidden">
+        <div class="absolute -right-16 -bottom-16 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="max-w-3xl mb-10">
+          <span class="text-blue-400 font-semibold text-xs tracking-wider uppercase">The Fundamental Dilemma</span>
+          <h3 class="text-2xl sm:text-3xl font-bold mt-1 text-white">Merchants Have Data. The Problem Is Understanding It.</h3>
+          <p class="text-slate-300 mt-3 text-sm sm:text-base leading-relaxed">
+            Every business operation records thousands of data points across disconnected tables. When a merchant asks a question, answering it accurately requires invoking different domain engines, distinct math formulas, and specialized databases.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <div class="bg-slate-800/80 border border-slate-700/60 p-5 rounded-2xl">
+            <div class="text-blue-400 mb-3"><i data-lucide="trending-up" class="w-6 h-6"></i></div>
+            <h4 class="font-bold text-white text-base">📊 Sales & Revenue</h4>
+            <p class="text-xs text-slate-400 mt-1">"Why were sales low yesterday?"</p>
+            <span class="inline-block mt-3 px-2 py-0.5 bg-blue-500/20 text-blue-300 text-[10px] font-mono rounded">Requires: Time-Series Math</span>
+          </div>
+
+          <div class="bg-slate-800/80 border border-slate-700/60 p-5 rounded-2xl">
+            <div class="text-indigo-400 mb-3"><i data-lucide="package" class="w-6 h-6"></i></div>
+            <h4 class="font-bold text-white text-base">📦 Product Catalog</h4>
+            <p class="text-xs text-slate-400 mt-1">"Show me my top 5 products"</p>
+            <span class="inline-block mt-3 px-2 py-0.5 bg-indigo-500/20 text-indigo-300 text-[10px] font-mono rounded">Requires: Volume Sorting</span>
+          </div>
+
+          <div class="bg-slate-800/80 border border-slate-700/60 p-5 rounded-2xl">
+            <div class="text-emerald-400 mb-3"><i data-lucide="users" class="w-6 h-6"></i></div>
+            <h4 class="font-bold text-white text-base">👥 Customers</h4>
+            <p class="text-xs text-slate-400 mt-1">"Who are my repeat buyers?"</p>
+            <span class="inline-block mt-3 px-2 py-0.5 bg-emerald-500/20 text-emerald-300 text-[10px] font-mono rounded">Requires: Spend Aggregation</span>
+          </div>
+
+          <div class="bg-slate-800/80 border border-slate-700/60 p-5 rounded-2xl">
+            <div class="text-amber-400 mb-3"><i data-lucide="clipboard-list" class="w-6 h-6"></i></div>
+            <h4 class="font-bold text-white text-base">📋 Inventory</h4>
+            <p class="text-xs text-slate-400 mt-1">"Which items need restocking?"</p>
+            <span class="inline-block mt-3 px-2 py-0.5 bg-amber-500/20 text-amber-300 text-[10px] font-mono rounded">Requires: Threshold Filtering</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 04 & 05 — WHY A ROUTER & THE ARCHITECTURE PIPELINE                        -->
+  <!-- ========================================================================= -->
+  <section id="architecture" class="py-20 bg-slate-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">The Routing Paradigm</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">One Question Can Lead to Many Different Workflows</h2>
+        <p class="text-slate-600 text-base sm:text-lg">
+          Instead of passing all queries directly into an expensive, hallucination-prone LLM, our architecture understands the question first and routes it to the exact computational brain.
+        </p>
+      </div>
+
+      <!-- Master Architecture Flow Banner -->
+      <div class="bg-white border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm mb-16">
+        <h3 class="text-xl font-bold text-slate-900 mb-6 flex items-center justify-between">
+          <span>From Question to Intelligence (7-Stage Pipeline)</span>
+          <span class="text-xs font-mono px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg">End-to-End Topology</span>
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-7 gap-3 text-center">
+          
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <div class="text-slate-400 text-xs font-mono font-bold mb-1">01. INGEST</div>
+            <div class="font-bold text-slate-900 text-sm">Merchant Query</div>
+            <div class="text-[11px] text-slate-500 mt-1">Natural Language</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-900">
+            <div class="text-blue-500 text-xs font-mono font-bold mb-1">02. DECIDE</div>
+            <div class="font-bold text-sm">Jev Classifier</div>
+            <div class="text-[11px] text-blue-600 mt-1">Intent + Conf.</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900">
+            <div class="text-indigo-500 text-xs font-mono font-bold mb-1">03. GUARD</div>
+            <div class="font-bold text-sm">Confidence Gate</div>
+            <div class="text-[11px] text-indigo-600 mt-1">Threshold: 0.70</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-purple-50 border border-purple-200 text-purple-900">
+            <div class="text-purple-500 text-xs font-mono font-bold mb-1">04. ROUTE</div>
+            <div class="font-bold text-sm">LangGraph</div>
+            <div class="text-[11px] text-purple-600 mt-1">StateGraph Edge</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+            <div class="text-emerald-500 text-xs font-mono font-bold mb-1">05. COMPUTE</div>
+            <div class="font-bold text-sm">Specialized Node</div>
+            <div class="text-[11px] text-emerald-600 mt-1">Domain Brain</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
+            <div class="text-amber-500 text-xs font-mono font-bold mb-1">06. MATH</div>
+            <div class="font-bold text-sm">Business Logic</div>
+            <div class="text-[11px] text-amber-600 mt-1">Zero Hallucination</div>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-900 text-white shadow-md">
+            <div class="text-blue-400 text-xs font-mono font-bold mb-1">07. ANSWER</div>
+            <div class="font-bold text-sm">Response</div>
+            <div class="text-[11px] text-slate-300 mt-1">Factual & Clear</div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 06, 07, 08, 09 — JEV AS THE DECISION LAYER & INTENT CHOICES              -->
+  <!-- ========================================================================= -->
+  <section id="jev-layer" class="py-20 bg-white border-t border-slate-200/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <!-- Left: Explanation -->
+        <div class="lg:col-span-6">
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-600">The Decision Engine</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-6">Where Does Jev Fit?</h2>
+          <p class="text-slate-600 text-base sm:text-lg leading-relaxed mb-6">
+            The Jev-style layer acts as the <strong>decision and classification layer</strong> between the merchant's natural-language request and the specialized business workflows.
+          </p>
+          <p class="text-slate-600 text-sm leading-relaxed mb-6">
+            Instead of executing slow, non-deterministic language models for simple routing, Jev classifies requests across strongly typed <strong class="text-slate-900">Choice</strong> categories at micro-latency, outputting both the intent and a calibrated certainty score.
+          </p>
+          
+          <div class="p-4 rounded-2xl bg-blue-50 border border-blue-200/80 text-xs text-blue-900 font-medium">
+            💡 <strong>Why is this revolutionary?</strong> We decouple <em>categorization</em> from <em>computation</em>. The classifier only determines what the merchant wants; pure Python math handles the truth.
+          </div>
+        </div>
+
+        <!-- Right: Interactive Intent Choice Cards -->
+        <div class="lg:col-span-6 space-y-3">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Supported Intent Choices:</div>
+
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-blue-300 transition-all flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-base">📊</div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">analytics</h4>
+                <p class="text-xs text-slate-500">Sales volume, revenue drops, growth trends & period comparisons</p>
+              </div>
+            </div>
+            <span class="text-xs font-mono bg-blue-100/70 text-blue-800 px-2 py-1 rounded">Choice</span>
+          </div>
+
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-indigo-300 transition-all flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-base">📦</div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">products</h4>
+                <p class="text-xs text-slate-500">Top-selling SKUs, catalog performance, product rankings</p>
+              </div>
+            </div>
+            <span class="text-xs font-mono bg-indigo-100/70 text-indigo-800 px-2 py-1 rounded">Choice</span>
+          </div>
+
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-emerald-300 transition-all flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-base">👥</div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">customers</h4>
+                <p class="text-xs text-slate-500">VIP buyers, repeat customer retention, total spend analysis</p>
+              </div>
+            </div>
+            <span class="text-xs font-mono bg-emerald-100/70 text-emerald-800 px-2 py-1 rounded">Choice</span>
+          </div>
+
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-amber-300 transition-all flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-base">📋</div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">inventory</h4>
+                <p class="text-xs text-slate-500">Stock counts, low inventory warnings, reorder thresholds</p>
+              </div>
+            </div>
+            <span class="text-xs font-mono bg-amber-100/70 text-amber-800 px-2 py-1 rounded">Choice</span>
+          </div>
+
+          <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-rose-300 transition-all flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-base">🆘</div>
+              <div>
+                <h4 class="font-bold text-slate-900 text-sm">support</h4>
+                <p class="text-xs text-slate-500">Dashboard navigation, system tutorials, low-confidence fallback</p>
+              </div>
+            </div>
+            <span class="text-xs font-mono bg-rose-100/70 text-rose-800 px-2 py-1 rounded">Fallback Choice</span>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 10, 11, 12 — CONFIDENCE & CONFIDENCE ROUTER                               -->
+  <!-- ========================================================================= -->
+  <section id="confidence-gate" class="py-20 bg-slate-900 text-white relative overflow-hidden">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-400">Architectural Safety Guardrail</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-2 mb-4">Understanding Is Not Enough. <br />The System Must Know How Confident It Is.</h2>
+        <p class="text-slate-300 text-base sm:text-lg">
+          The confidence router prevents the system from blindly executing operations on uncertain or ambiguous queries.
+        </p>
+      </div>
+
+      <!-- 3 Confidence Case Studies -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+        
+        <!-- Clear Query -->
+        <div class="bg-slate-800/90 border border-emerald-500/40 p-6 rounded-3xl relative">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono font-bold px-2.5 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg">CLEAR (94% Conf)</span>
+            <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400"></i>
+          </div>
+          <h4 class="font-bold text-white text-base mb-2">"Show my best-selling products"</h4>
+          <p class="text-xs text-slate-400 mb-6">Unambiguous semantic overlap with Product catalog choice.</p>
+          <div class="pt-4 border-t border-slate-700/60 flex items-center justify-between text-xs">
+            <span class="text-slate-300 font-mono">Confidence: 0.94 &ge; 0.70</span>
+            <span class="text-emerald-400 font-bold">&rarr; Products Node</span>
+          </div>
+        </div>
+
+        <!-- Moderate Query -->
+        <div class="bg-slate-800/90 border border-blue-500/40 p-6 rounded-3xl relative">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono font-bold px-2.5 py-1 bg-blue-500/20 text-blue-400 rounded-lg">MODERATE (78% Conf)</span>
+            <i data-lucide="check-circle" class="w-5 h-5 text-blue-400"></i>
+          </div>
+          <h4 class="font-bold text-white text-base mb-2">"How are my sales doing?"</h4>
+          <p class="text-xs text-slate-400 mb-6">General inquiry, clearly mapped to the Analytics domain.</p>
+          <div class="pt-4 border-t border-slate-700/60 flex items-center justify-between text-xs">
+            <span class="text-slate-300 font-mono">Confidence: 0.78 &ge; 0.70</span>
+            <span class="text-blue-400 font-bold">&rarr; Analytics Node</span>
+          </div>
+        </div>
+
+        <!-- Ambiguous Query (Diverts) -->
+        <div class="bg-slate-800/90 border border-amber-500/40 p-6 rounded-3xl relative">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-mono font-bold px-2.5 py-1 bg-amber-500/20 text-amber-400 rounded-lg">AMBIGUOUS (45% Conf)</span>
+            <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400"></i>
+          </div>
+          <h4 class="font-bold text-white text-base mb-2">"Tell me about my business"</h4>
+          <p class="text-xs text-slate-400 mb-6">Vague input; no single dominant intent detected.</p>
+          <div class="pt-4 border-t border-slate-700/60 flex items-center justify-between text-xs">
+            <span class="text-slate-300 font-mono">Confidence: 0.45 &lt; 0.70</span>
+            <span class="text-amber-400 font-bold">&rarr; Support & Clarify</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Interactive Gate Visualization -->
+      <div class="bg-slate-800 border border-slate-700 p-8 rounded-3xl text-center max-w-2xl mx-auto">
+        <h4 class="font-bold text-lg text-white mb-2">The 0.70 Confidence Decision Gate</h4>
+        <p class="text-xs text-slate-300 mb-6">
+          If <code class="bg-slate-900 px-2 py-1 rounded text-blue-400 font-mono">confidence &ge; 0.70</code>, the state progresses to the specialized node. Otherwise, the gate routes to <code class="bg-slate-900 px-2 py-1 rounded text-amber-400 font-mono">support_node</code> for guided clarification.
+        </p>
+        <div class="flex items-center justify-center space-x-6 text-sm font-mono">
+          <div class="px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+            &ge; 0.70 : Execute Intent Node
+          </div>
+          <div class="px-4 py-2 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30">
+            &lt; 0.70 : Divert to Support
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 13, 14, 15, 16, 17, 18, 19 — SPECIALIZED MERCHANT INTELLIGENCE            -->
+  <!-- ========================================================================= -->
+  <section id="specialized-brains" class="py-20 bg-white">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Specialized Nodes</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">One Intelligence Layer. Multiple Business Brains.</h2>
+        <p class="text-slate-600 text-base sm:text-lg">
+          Click through each domain intelligence node to inspect the live underlying mock data and deterministic calculations.
+        </p>
+      </div>
+
+      <!-- Domain Brains Interactive Tabs -->
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-8" id="domainTabs">
+        <button onclick="selectDomain('analytics')" id="tab-analytics" class="domain-tab p-3.5 rounded-2xl border text-center transition-all bg-blue-600 text-white font-bold text-sm shadow-md">
+          📊 Analytics
+        </button>
+        <button onclick="selectDomain('products')" id="tab-products" class="domain-tab p-3.5 rounded-2xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm">
+          📦 Products
+        </button>
+        <button onclick="selectDomain('customers')" id="tab-customers" class="domain-tab p-3.5 rounded-2xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm">
+          👥 Customers
+        </button>
+        <button onclick="selectDomain('inventory')" id="tab-inventory" class="domain-tab p-3.5 rounded-2xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm">
+          📋 Inventory
+        </button>
+        <button onclick="selectDomain('support')" id="tab-support" class="domain-tab p-3.5 rounded-2xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-sm col-span-2 sm:col-span-1">
+          🆘 Support
+        </button>
+      </div>
+
+      <!-- Domain Details Container -->
+      <div id="domainContent" class="bg-slate-50 border border-slate-200 rounded-3xl p-6 sm:p-10 shadow-sm">
+        <!-- Injected via JavaScript -->
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 20 & 21 — BUSINESS LOGIC & OPTIONAL LLM SEPARATION                        -->
+  <!-- ========================================================================= -->
+  <section class="py-20 bg-slate-50 border-t border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-blue-600">The Integrity Rule</span>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-6">AI Decides. Data Calculates.</h2>
+          <p class="text-slate-600 text-base leading-relaxed mb-6">
+            In business systems, arithmetic mistakes destroy trust. The classifier determines <em>"What does the merchant want to know?"</em> but the factual calculations are calculated with pure, unyielding Python logic:
+          </p>
+          
+          <div class="space-y-4">
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">&check;</div>
+              <p class="text-sm text-slate-700"><strong>Zero Numerical Hallucinations:</strong> The LLM is strictly prohibited from inventing rupee figures, inventory counts, or percentage deltas.</p>
+            </div>
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">&check;</div>
+              <p class="text-sm text-slate-700"><strong>Deterministic Formulae:</strong> Period-over-period revenue comparisons ($\Delta = -44.68\%$) are calculated before any text synthesis occurs.</p>
+            </div>
+            <div class="flex items-start space-x-3">
+              <div class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold shrink-0 mt-0.5">&check;</div>
+              <p class="text-sm text-slate-700"><strong>Optional Downstream LLM:</strong> When enabled, an LLM only polishes and summarizes the deterministic numbers into natural conversational phrasing.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Contrast Card -->
+        <div class="bg-white border border-slate-200 p-8 rounded-3xl shadow-lg">
+          <h4 class="font-bold text-slate-900 text-base mb-4 flex items-center space-x-2">
+            <i data-lucide="shield-check" class="w-5 h-5 text-emerald-600"></i>
+            <span>Architecture Separation of Concerns</span>
+          </h4>
+
+          <div class="space-y-3 font-mono text-xs">
+            <div class="p-3 bg-blue-50 text-blue-900 rounded-xl border border-blue-200">
+              <div class="font-bold text-blue-700">STEP 1: INTENT CLASSIFICATION (Jev / TF-IDF)</div>
+              <div>Input: "Why were sales low yesterday?" &rarr; Intent: ANALYTICS (0.94)</div>
+            </div>
+
+            <div class="p-3 bg-indigo-50 text-indigo-900 rounded-xl border border-indigo-200">
+              <div class="font-bold text-indigo-700">STEP 2: ROUTING (LangGraph StateGraph)</div>
+              <div>Router Node &rarr; Routes execution to analytics_node</div>
+            </div>
+
+            <div class="p-3 bg-emerald-50 text-emerald-900 rounded-xl border border-emerald-200">
+              <div class="font-bold text-emerald-700">STEP 3: DETERMINISTIC MATH (Python)</div>
+              <div>(₹31,200 - ₹56,400) / ₹56,400 &rarr; -44.68% Drop (Computed Exactly)</div>
+            </div>
+
+            <div class="p-3 bg-slate-900 text-white rounded-xl">
+              <div class="font-bold text-blue-400">STEP 4: FINAL SYNTHESIS</div>
+              <div>"Yesterday (2026-10-01), revenue was ₹31,200 (a 44.7% drop)..."</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 23 — END-TO-END LIVE INTERACTIVE SIMULATION SANDBOX                       -->
+  <!-- ========================================================================= -->
+  <section id="live-demo" class="py-20 bg-white border-y border-slate-200/80">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Interactive Execution</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">See the Architecture in Action</h2>
+        <p class="text-slate-600 text-base sm:text-lg">
+          Type any custom merchant query or pick a preset to watch the state flow through each stage of the LangGraph state machine.
+        </p>
+      </div>
+
+      <!-- Live Simulation Playground UI -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left: Input & Pipeline Step Monitor (7 cols) -->
+        <div class="lg:col-span-7 space-y-6">
+          
+          <!-- Query Input Panel -->
+          <div class="bg-slate-50 border border-slate-200 p-6 rounded-3xl shadow-sm">
+            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Merchant Natural Language Input:</label>
+            <div class="flex space-x-2">
+              <input 
+                id="simInput" 
+                type="text" 
+                value="Why were my sales low yesterday?" 
+                class="flex-1 px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+              />
+              <button 
+                id="simRunBtn"
+                onclick="runLiveSimulation()" 
+                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl shadow-md transition-all flex items-center space-x-2"
+              >
+                <i data-lucide="play" class="w-4 h-4"></i>
+                <span>Simulate</span>
+              </button>
+            </div>
+
+            <!-- Presets -->
+            <div class="flex flex-wrap gap-2 mt-4 text-xs font-medium">
+              <button onclick="setSimQuery('How much did I sell today?')" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600">📊 Sales Today</button>
+              <button onclick="setSimQuery('Show me my top 5 products.')" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600">📦 Top Products</button>
+              <button onclick="setSimQuery('Who are my repeat customers?')" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600">👥 Repeat Buyers</button>
+              <button onclick="setSimQuery('Which products are low in stock?')" class="px-2.5 py-1 bg-white border border-slate-200 rounded-lg text-slate-600 hover:text-blue-600">📋 Low Stock</button>
+              <button onclick="setSimQuery('Tell me about my business')" class="px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg text-amber-800">⚠️ Ambiguous (Low Conf)</button>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Animated Pipeline Stages -->
+          <div class="bg-slate-50 border border-slate-200 p-6 rounded-3xl space-y-4">
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Live Execution Flow:</h4>
+
+            <!-- Step 1: Question Ingest -->
+            <div id="step-1" class="step-node p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between transition-all">
+              <div class="flex items-center space-x-3">
+                <span class="step-badge w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-mono text-xs flex items-center justify-center font-bold">1</span>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">1. Question Ingestion</h5>
+                  <p class="text-xs text-slate-500">Normalize text & expand merchant vocabulary</p>
+                </div>
+              </div>
+              <span class="step-status text-xs font-mono text-slate-400">Ready</span>
+            </div>
+
+            <!-- Step 2: Jev Classifier -->
+            <div id="step-2" class="step-node p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between transition-all">
+              <div class="flex items-center space-x-3">
+                <span class="step-badge w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-mono text-xs flex items-center justify-center font-bold">2</span>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">2. Jev-Style Classifier</h5>
+                  <p class="text-xs text-slate-500">Evaluate similarity across Choice choices</p>
+                </div>
+              </div>
+              <span class="step-status text-xs font-mono text-slate-400">Pending</span>
+            </div>
+
+            <!-- Step 3: Confidence Router -->
+            <div id="step-3" class="step-node p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between transition-all">
+              <div class="flex items-center space-x-3">
+                <span class="step-badge w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-mono text-xs flex items-center justify-center font-bold">3</span>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">3. Confidence Router Gate</h5>
+                  <p class="text-xs text-slate-500">Check certainty &ge; 0.70 threshold</p>
+                </div>
+              </div>
+              <span class="step-status text-xs font-mono text-slate-400">Pending</span>
+            </div>
+
+            <!-- Step 4: LangGraph StateGraph -->
+            <div id="step-4" class="step-node p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between transition-all">
+              <div class="flex items-center space-x-3">
+                <span class="step-badge w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-mono text-xs flex items-center justify-center font-bold">4</span>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">4. LangGraph Transition</h5>
+                  <p class="text-xs text-slate-500">Execute target specialized node</p>
+                </div>
+              </div>
+              <span class="step-status text-xs font-mono text-slate-400">Pending</span>
+            </div>
+
+            <!-- Step 5: Deterministic Business Engine -->
+            <div id="step-5" class="step-node p-3.5 bg-white border border-slate-200 rounded-2xl flex items-center justify-between transition-all">
+              <div class="flex items-center space-x-3">
+                <span class="step-badge w-7 h-7 rounded-full bg-slate-100 text-slate-600 font-mono text-xs flex items-center justify-center font-bold">5</span>
+                <div>
+                  <h5 class="text-sm font-bold text-slate-900">5. Business Logic & Math</h5>
+                  <p class="text-xs text-slate-500">Query deterministic DB & compute facts</p>
+                </div>
+              </div>
+              <span class="step-status text-xs font-mono text-slate-400">Pending</span>
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- Right: Live Result & State Trace Inspector (5 cols) -->
+        <div class="lg:col-span-5 space-y-6">
+          
+          <!-- Final Response Box -->
+          <div class="bg-slate-900 text-white p-6 rounded-3xl shadow-xl">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center space-x-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span class="text-xs font-mono text-emerald-400 font-bold uppercase">Pipeline Output</span>
+              </div>
+              <div id="simBadgeIntent" class="text-xs font-mono px-2.5 py-1 bg-blue-500/20 text-blue-300 rounded border border-blue-500/30">
+                intent: analytics
+              </div>
+            </div>
+
+            <!-- Response text -->
+            <div id="simReplyText" class="text-sm text-slate-200 leading-relaxed font-sans min-h-[140px] whitespace-pre-line">
+              Click "Simulate" to execute the pipeline...
+            </div>
+
+            <!-- Confidence Meter -->
+            <div class="mt-6 pt-4 border-t border-slate-800 flex items-center justify-between text-xs">
+              <span class="text-slate-400">Confidence Score:</span>
+              <span id="simConfidenceVal" class="font-mono text-emerald-400 font-bold">0.94 / 1.00</span>
+            </div>
+            <div class="w-full bg-slate-800 h-2 rounded-full mt-1.5 overflow-hidden">
+              <div id="simConfidenceBar" class="bg-gradient-to-r from-blue-500 to-emerald-400 h-full w-[94%] transition-all duration-500"></div>
+            </div>
+          </div>
+
+          <!-- Technical State Trace Inspector (Toggleable) -->
+          <div class="bg-slate-50 border border-slate-200 p-5 rounded-3xl font-mono text-xs">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[11px] font-bold text-slate-500 uppercase">MerchantState Snapshot:</span>
+              <span class="text-[10px] text-blue-600 font-semibold">Pydantic v2</span>
+            </div>
+            <pre id="simJsonTrace" class="bg-slate-900 text-emerald-400 p-3.5 rounded-xl overflow-x-auto text-[11px] max-h-48 leading-relaxed">
+{
+  "message": "Why were my sales low yesterday?",
+  "intent": "analytics",
+  "confidence": 0.94,
+  "routed_node": "analytics",
+  "passes_threshold": true
+}
+            </pre>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 25 — WHY NOT JUST SEND EVERYTHING TO AN LLM?                              -->
+  <!-- ========================================================================= -->
+  <section class="py-20 bg-slate-50">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Architectural Advantage</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">Why Not Just Send Everything to an LLM?</h2>
+        <p class="text-slate-600 text-base sm:text-lg">
+          Comparing the monolithic LLM approach versus the Merchant Intelligence Router architecture.
+        </p>
+      </div>
+
+      <!-- Comparison Matrix -->
+      <div class="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-200">
+          
+          <!-- Monolithic LLM -->
+          <div class="p-8 bg-rose-50/20">
+            <div class="flex items-center space-x-2 text-rose-600 font-bold text-sm mb-4">
+              <i data-lucide="x-circle" class="w-5 h-5"></i>
+              <span>Naïve Approach: Monolithic LLM Prompt</span>
+            </div>
+            <ul class="space-y-4 text-sm text-slate-600">
+              <li class="flex items-start space-x-2">
+                <span class="text-rose-500 font-bold">&cross;</span>
+                <span><strong>High Hallucination Risk:</strong> The LLM invents financial metrics and stock counts when calculating math in natural language tokens.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="text-rose-500 font-bold">&cross;</span>
+                <span><strong>High Latency & Token Bills:</strong> Every single query runs through large token generation pipelines ($$$).</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="text-rose-500 font-bold">&cross;</span>
+                <span><strong>No Confidence Guardrails:</strong> Ambiguous questions still execute with hallucinations rather than asking for clarification.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="text-rose-500 font-bold">&cross;</span>
+                <span><strong>Hard to Debug:</strong> Black-box execution without discrete inspectable state transitions.</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Merchant Intelligence Router -->
+          <div class="p-8 bg-emerald-50/20">
+            <div class="flex items-center space-x-2 text-emerald-700 font-bold text-sm mb-4">
+              <i data-lucide="check-circle" class="w-5 h-5"></i>
+              <span>Merchant Intelligence Router Architecture</span>
+            </div>
+            <ul class="space-y-4 text-sm text-slate-700">
+              <li class="flex items-start space-x-2">
+                <span class="text-emerald-600 font-bold">&check;</span>
+                <span><strong>Zero-Hallucination Math:</strong> Deterministic Python algorithms compute all revenue % deltas and rankings.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="text-emerald-600 font-bold">&check;</span>
+                <span><strong>Sub-Millisecond Classification:</strong> Jev-style layer categorizes requests in micro-seconds at ₹0 cost.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="text-emerald-600 font-bold">&check;</span>
+                <span><strong>Confidence Guardrails:</strong> 0.70 threshold automatically catches ambiguity and safely asks for clarification.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="text-emerald-600 font-bold">&check;</span>
+                <span><strong>Inspectable LangGraph:</strong> Every node, transition, and state mutation is 100% testable with pytest.</span>
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 26 — FUTURE ARCHITECTURE EXPANSION                                        -->
+  <!-- ========================================================================= -->
+  <section class="py-20 bg-white border-t border-slate-200">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="text-center max-w-3xl mx-auto mb-16">
+        <span class="text-xs font-bold uppercase tracking-wider text-blue-600">Extensibility</span>
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 mt-2 mb-4">One Router. Infinite Intelligence Modules.</h2>
+        <p class="text-slate-600 text-base sm:text-lg">
+          Adding new merchant capabilities simply requires registering a new <code class="bg-slate-100 px-2 py-0.5 rounded font-mono text-sm">Choice</code> and appending a LangGraph node.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-blue-600 mb-2 font-bold text-sm">1. Marketing Brain</div>
+          <p class="text-xs text-slate-500">Campaign ROI, WhatsApp merchant alerts, festive promotions</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-indigo-600 mb-2 font-bold text-sm">2. Pricing Intelligence</div>
+          <p class="text-xs text-slate-500">Dynamic SKU margins, local wholesale price parity</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-emerald-600 mb-2 font-bold text-sm">3. Cash Flow Engine</div>
+          <p class="text-xs text-slate-500">Working capital cycles, pending receivables, supplier credit</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-purple-600 mb-2 font-bold text-sm">4. Supplier Brain</div>
+          <p class="text-xs text-slate-500">Vendor lead times, wholesale order batches, freight tracking</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-amber-600 mb-2 font-bold text-sm">5. Demand Forecasting</div>
+          <p class="text-xs text-slate-500">Festive demand surges, monsoon stock adjustments</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-teal-600 mb-2 font-bold text-sm">6. Compliance & GST</div>
+          <p class="text-xs text-slate-500">GSTR-1 reconciliations, HSN code verification</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-rose-600 mb-2 font-bold text-sm">7. Fraud Detection</div>
+          <p class="text-xs text-slate-500">Suspicious UPI refunds, fake discount voucher alerts</p>
+        </div>
+
+        <div class="p-5 rounded-2xl bg-slate-50 border border-slate-200">
+          <div class="text-blue-800 mb-2 font-bold text-sm">8. Growth Advisor</div>
+          <p class="text-xs text-slate-500">Store expansion, new SKU addition recommendations</p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- 29 & 30 — VYAPARMITRA AS THE PRACTICAL MERCHANT USE CASE                 -->
+  <!-- ========================================================================= -->
+  <section id="vyaparmitra" class="py-20 bg-slate-900 text-white border-t border-slate-800">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+        
+        <div class="lg:col-span-7">
+          <div class="inline-flex items-center space-x-2 px-3 py-1 bg-blue-500/20 text-blue-300 rounded-lg text-xs font-mono font-bold mb-4">
+            REAL-WORLD CASE STUDY
+          </div>
+          <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-6">
+            VyaparMitra: A Real Merchant Application Built on this Architecture
+          </h2>
+          <p class="text-slate-300 text-base leading-relaxed mb-6">
+            VyaparMitra is the practical merchant application interface designed for Indian retail shop owners. It connects directly to store point-of-sale (POS) records and utilizes the <strong>Merchant Intelligence Router</strong> to answer natural language Hindi & English store inquiries.
+          </p>
+          
+          <div class="p-5 bg-slate-800/80 border border-slate-700 rounded-2xl text-xs text-slate-300 space-y-2 font-mono">
+            <div>&bull; Merchant Application : VyaparMitra Mobile / Web ERP</div>
+            <div>&bull; Decision Engine     : Jev-Compatible Classifier (BaseIntentClassifier)</div>
+            <div>&bull; Routing Framework   : LangGraph StateGraph (0.70 Confidence Gate)</div>
+            <div>&bull; Computational Truth : Pure Deterministic Python Math (Zero Hallucination)</div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5">
+          <!-- Mock Phone / Tablet UI Representation -->
+          <div class="bg-slate-950 border border-slate-700 rounded-3xl p-6 shadow-2xl">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-4 text-xs font-bold text-slate-400">
+              <span>VyaparMitra Assistant</span>
+              <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+            </div>
+
+            <div class="space-y-3 text-xs">
+              <div class="p-3 bg-blue-600/30 text-blue-200 rounded-2xl rounded-tr-none ml-auto max-w-[85%]">
+                "Kal sales kam kyu hui thi? (Why were sales low yesterday?)"
+              </div>
+              
+              <div class="p-3.5 bg-slate-800 text-slate-200 rounded-2xl rounded-tl-none max-w-[95%] space-y-1">
+                <div class="font-bold text-emerald-400 mb-1">📊 Sales Analytics Summary:</div>
+                <div>• Yesterday's revenue was <strong>₹31,200</strong> across 41 orders.</div>
+                <div>• Revenue saw a <strong>drop of 44.7%</strong> vs previous day.</div>
+                <div>• Order volume fell by 47.4%.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- ========================================================================= -->
+  <!-- FOOTER                                                                    -->
+  <!-- ========================================================================= -->
+  <footer class="py-12 bg-slate-950 text-slate-400 border-t border-slate-900 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      
+      <div>
+        <span class="font-bold text-white text-sm">Merchant Intelligence Router</span>
+        <p class="text-[11px] text-slate-500 mt-1">Inspired by the Jev + LangGraph decision & routing architecture.</p>
+      </div>
+
+      <div class="text-center sm:text-right text-[11px] text-slate-500">
+        <p>Built for zero-cost local learning and modular production architecture.</p>
+        <p class="mt-0.5">Compatible with Python 3.12+ / 3.14+, LangGraph, and Pydantic v2.</p>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- App Script -->
+  <script src="/static/app.js"></script>
+</body>
+</html>

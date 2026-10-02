@@ -224,8 +224,19 @@ pip install -r requirements.txt
 
 ---
 
-## 15. How to Run (Interactive CLI & Explain Mode)
+## 15. How to Run the Interactive Web Platform & CLI
 
+### Option A: Launch Interactive Web Architecture Platform (Recommended)
+```bash
+python server.py
+```
+Open **[http://localhost:8000](http://localhost:8000)** in your browser to experience the full interactive platform, including:
+* **Simple View vs. Technical View** toggle
+* **Interactive End-to-End Execution Simulator**
+* **Live Step-by-Step Node Highlighter**
+* **Deterministic Business Brains Data Inspector**
+
+### Option B: Interactive Terminal CLI
 ```bash
 python main.py
 ```
